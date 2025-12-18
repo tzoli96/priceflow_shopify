@@ -1,0 +1,168 @@
+services:
+  embedded-app:
+    build:
+      context: ./apps/embedded-app
+      dockerfile: Dockerfile
+      target: development
+      args:
+        NODE_ENV: development
+    container_name: embedded-app
+    volumes:
+      # Mount source code for hot reload
+      - ./apps/embedded-app:/usr/src/app
+      # Use anonymous volumes for node_modules to prevent host overwrite
+      - /usr/src/app/node_modules
+      - /usr/src/app/.next
+      - /usr/src/app/.pnpm-store
+    working_dir: /usr/src/app
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+      - HOSTNAME=0.0.0.0
+      - WATCHPACK_POLLING=true
+    restart: unless-stopped
+    networks:
+      - shopify-network
+
+  widget-app:
+    build:
+      context: ./apps/widget-app
+      dockerfile: Dockerfile
+      target: development
+      args:
+        NODE_ENV: development
+    container_name: widget-app
+    volumes:
+      # Mount source code for hot reload
+      - ./apps/widget-app:/usr/src/app
+      # Use anonymous volumes for node_modules to prevent host overwrite
+      - /usr/src/app/node_modules
+      - /usr/src/app/.next
+      - /usr/src/app/.pnpm-store
+    working_dir: /usr/src/app
+    ports:
+      - "3001:3000"
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+      - HOSTNAME=0.0.0.0
+      - WATCHPACK_POLLING=true
+    restart: unless-stopped
+    networks:
+      - shopify-network
+
+  nestjs-backend:
+    build:
+      context: ./backend/nestjs
+      dockerfile: Dockerfile
+      target: development
+      args:
+        NODE_ENV: development
+    container_name: nestjs-backend
+    env_file:
+      - .env
+    volumes:
+      # Mount source code for hot reload
+      - ./backend/nestjs:/usr/src/app
+      # Use anonymous volumes for node_modules to prevent host overwrite
+      - /usr/src/app/node_modules
+      - /usr/src/app/.pnpm-store
+    working_dir: /usr/src/app
+    ports:
+      - "4000:4000"
+    environment:
+      - NODE_ENV=development
+      - PORT=4000
+    restart: unless-stopped
+    networks:
+      - shopify-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: postgres
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    restart: unless-stopped
+    networks:
+      - shopify-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  pgweb:
+    image: sosedoff/pgweb:latest
+    container_name: pgweb
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable
+    ports:
+      - "8080:8081"
+    restart: unless-stopped
+    networks:
+      - shopify-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  localstack:
+    image: localstack/localstack:2.2
+    container_name: localstack
+    ports:
+      - "4566:4566"
+    environment:
+      - SERVICES=secretsmanager
+      - DEBUG=1
+      - PERSISTENCE=0
+    volumes:
+      - localstack-data:/var/lib/localstack
+    networks:
+      - shopify-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4566/_localstack/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  localstack-init:
+    image: amazon/aws-cli:latest
+    container_name: localstack-init
+    depends_on:
+      localstack:
+        condition: service_healthy
+    volumes:
+      - ./localstack/init-secrets.sh:/init-secrets.sh
+      - ./.env:/app/.env:ro
+    environment:
+      - AWS_ACCESS_KEY_ID=test
+      - AWS_SECRET_ACCESS_KEY=test
+      - AWS_DEFAULT_REGION=us-east-1
+      - ENV_FILE=/app/.env
+    entrypoint: ["/bin/bash", "/init-secrets.sh"]
+    networks:
+      - shopify-network
+
+volumes:
+  postgres-data:
+  localstack-data:
+
+networks:
+  shopify-network:
+    driver: bridge
