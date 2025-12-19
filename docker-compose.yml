@@ -1,15 +1,15 @@
 services:
-  embedded-app:
+  admin:
     build:
-      context: ./apps/embedded-app
-      dockerfile: Dockerfile
+      context: apps/admin
+      dockerfile: ../../infra/docker/admin/Dockerfile
       target: development
       args:
         NODE_ENV: development
-    container_name: embedded-app
+    container_name: admin
     volumes:
       # Mount source code for hot reload
-      - ./apps/embedded-app:/usr/src/app
+      - ./apps/admin:/usr/src/app
       # Use anonymous volumes for node_modules to prevent host overwrite
       - /usr/src/app/node_modules
       - /usr/src/app/.next
@@ -26,17 +26,17 @@ services:
     networks:
       - shopify-network
 
-  widget-app:
+  storefront:
     build:
-      context: ./apps/widget-app
-      dockerfile: Dockerfile
+      context: apps/storefront
+      dockerfile: ../../infra/docker/storefront/Dockerfile
       target: development
       args:
         NODE_ENV: development
-    container_name: widget-app
+    container_name: storefront
     volumes:
       # Mount source code for hot reload
-      - ./apps/widget-app:/usr/src/app
+      - ./apps/storefront:/usr/src/app
       # Use anonymous volumes for node_modules to prevent host overwrite
       - /usr/src/app/node_modules
       - /usr/src/app/.next
@@ -53,19 +53,19 @@ services:
     networks:
       - shopify-network
 
-  nestjs-backend:
+  api:
     build:
-      context: ./backend/nestjs
-      dockerfile: Dockerfile
+      context: apps/api
+      dockerfile: ../../infra/docker/api/Dockerfile
       target: development
       args:
         NODE_ENV: development
-    container_name: nestjs-backend
+    container_name: api
     env_file:
       - .env
     volumes:
       # Mount source code for hot reload
-      - ./backend/nestjs:/usr/src/app
+      - ./apps/api:/usr/src/app
       # Use anonymous volumes for node_modules to prevent host overwrite
       - /usr/src/app/node_modules
       - /usr/src/app/.pnpm-store
@@ -105,15 +105,20 @@ services:
       retries: 5
       start_period: 10s
 
-  pgweb:
-    image: sosedoff/pgweb:latest
-    container_name: pgweb
+  adminer:
+    image: ghcr.io/jeliebig/adminer-autologin
+    container_name: adminer
     env_file:
       - .env
     environment:
-      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable
+      - ADMINER_PLUGINS=login-env-vars
+      - ADMINER_DRIVER=pgsql
+      - ADMINER_SERVER=postgres
+      - ADMINER_USERNAME=${POSTGRES_USER}
+      - ADMINER_PASSWORD=${POSTGRES_PASSWORD}
+      - ADMINER_DB=${POSTGRES_DB}
     ports:
-      - "8080:8081"
+      - "8080:8080"
     restart: unless-stopped
     networks:
       - shopify-network
@@ -148,7 +153,7 @@ services:
       localstack:
         condition: service_healthy
     volumes:
-      - ./localstack/init-secrets.sh:/init-secrets.sh
+      - ./infra/localstack/init-secrets.sh:/init-secrets.sh
       - ./.env:/app/.env:ro
     environment:
       - AWS_ACCESS_KEY_ID=test
@@ -156,6 +161,40 @@ services:
       - AWS_DEFAULT_REGION=us-east-1
       - ENV_FILE=/app/.env
     entrypoint: ["/bin/bash", "/init-secrets.sh"]
+    networks:
+      - shopify-network
+
+  nginx:
+    image: nginx:alpine
+    container_name: nginx_proxy
+    depends_on:
+      - admin
+      - storefront
+      - api
+    volumes:
+      - ./infra/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - "8000:80"
+    restart: unless-stopped
+    networks:
+      - shopify-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://127.0.0.1/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  tunnel:
+    image: cloudflare/cloudflared:2024.6.1
+    container_name: cloudflared_tunnel
+    depends_on:
+      nginx:
+        condition: service_healthy
+    command: tunnel --no-autoupdate run
+    volumes:
+      - ./infra/cloudflared:/etc/cloudflared:ro
+    restart: unless-stopped
     networks:
       - shopify-network
 

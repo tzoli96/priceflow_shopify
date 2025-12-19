@@ -1,0 +1,30 @@
+api_version = "2024-10"
+uid = "7bc196f3-1425-76f2-ecc0-47efee71d8c02ddd7f28"
+type = "theme"
+name = "PriceFlow Widget"
+
+[[extensions]]
+type = "theme"
+name = "PriceFlow Widget"
+handle = "priceflow-widget"
+
+  [[extensions.blocks]]
+  type = "app"
+  name = "Price Comparison Widget"
+
+    [[extensions.blocks.settings]]
+    type = "product"
+    id = "product"
+    label = "Product"
+
+    [[extensions.blocks.settings]]
+    type = "text"
+    id = "title"
+    label = "Widget Title"
+    default = "Compare Prices"
+
+    [[extensions.blocks.settings]]
+    type = "checkbox"
+    id = "show_competitors"
+    label = "Show Competitor Prices"
+    default = true

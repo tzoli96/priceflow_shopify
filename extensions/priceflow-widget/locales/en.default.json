@@ -1,0 +1,8 @@
+{
+  "name": "PriceFlow Widget",
+  "widget": {
+    "title": "Price Comparison",
+    "loading": "Loading price data...",
+    "error": "Unable to load price data"
+  }
+}
