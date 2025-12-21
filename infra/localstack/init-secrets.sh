@@ -5,7 +5,7 @@ set -e
 echo "Waiting for LocalStack Secrets Manager to be ready..."
 
 # Wait for LocalStack to be fully ready
-until curl -s http://localstack:4566/_localstack/health | grep -q '"secretsmanager": "available"' 2>/dev/null; do
+until curl -s http://localstack:4566/_localstack/health | grep -qE '"secretsmanager": "(available|running)"' 2>/dev/null; do
   echo "Waiting for Secrets Manager..."
   sleep 2
 done

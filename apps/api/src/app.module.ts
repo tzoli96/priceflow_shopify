@@ -1,10 +1,14 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { ShopifyModule } from './shopify/shopify.module';
+import { PrismaModule } from './domains/common/database/prisma.module';
+import { ShopModule } from './domains/shop/shop.module';
 
 @Module({
-  imports: [ShopifyModule],
+  imports: [
+    PrismaModule, // Global Prisma module
+    ShopModule,   // Shop domain
+  ],
   controllers: [AppController],
   providers: [AppService],
 })
