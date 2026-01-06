@@ -53,6 +53,13 @@ export class ShopService {
   }
 
   /**
+   * Find shop by domain
+   */
+  async findByDomain(shopDomain: string): Promise<ShopModel | null> {
+    return this.shopRepository.findByDomain(shopDomain);
+  }
+
+  /**
    * Get shop session
    */
   async getSession(shopDomain: string): Promise<ShopResponseDto> {
@@ -86,6 +93,53 @@ export class ShopService {
       updated.domain,
       updated.isActive,
       updated.installedAt,
+    );
+  }
+
+  /**
+   * Check if any shop exists in the database
+   */
+  async hasShops(): Promise<{ hasShop: boolean; shopDomain?: string }> {
+    const shops = await this.shopRepository.findAll(1);
+
+    if (shops.length === 0) {
+      return { hasShop: false };
+    }
+
+    return {
+      hasShop: true,
+      shopDomain: shops[0].domain,
+    };
+  }
+
+  /**
+   * Create a dev shop (only for development)
+   */
+  async createDevShop(shopDomain: string = 'dev-shop.myshopify.com'): Promise<ShopResponseDto> {
+    // Check if shop already exists
+    const existingShop = await this.shopRepository.findByDomain(shopDomain);
+
+    if (existingShop) {
+      return ShopResponseDto.success(
+        existingShop.domain,
+        existingShop.isActive,
+        existingShop.installedAt,
+      );
+    }
+
+    // Create dev shop
+    const devShop = ShopModel.create(
+      shopDomain,
+      'dev_access_token_placeholder',
+      'read_products,write_products,read_orders,read_customers',
+    );
+
+    const saved = await this.shopRepository.save(devShop);
+
+    return ShopResponseDto.success(
+      saved.domain,
+      saved.isActive,
+      saved.installedAt,
     );
   }
 }

@@ -48,4 +48,43 @@ export class ShopController {
   ): Promise<ShopResponseDto> {
     return this.shopService.deactivateShop(shop);
   }
+
+  /**
+   * GET /shopify/status
+   * Check if any shop exists in the database
+   */
+  @Get('status')
+  async checkShopStatus(): Promise<{ hasShop: boolean; shopDomain?: string }> {
+    return this.shopService.hasShops();
+  }
+
+  /**
+   * GET /shopify/current
+   * Get current shop domain from database (first shop)
+   * Simple single-shop mode - no cookies, no localStorage
+   */
+  @Get('current')
+  async getCurrentShop(): Promise<{ shop: string | null }> {
+    const result = await this.shopService.hasShops();
+    return {
+      shop: result.shopDomain || null,
+    };
+  }
+
+  /**
+   * POST /shopify/dev-setup
+   * Create a dev shop (development only)
+   */
+  @Post('dev-setup')
+  @HttpCode(HttpStatus.CREATED)
+  async createDevShop(): Promise<ShopResponseDto> {
+    // Only allow dev shop creation in development mode
+    const isDevelopment = process.env.NODE_ENV === 'development' || process.env.ALLOW_DEV_SETUP === 'true';
+
+    if (!isDevelopment) {
+      throw new Error('Dev shop creation is only allowed in development mode. Please use OAuth flow in production.');
+    }
+
+    return this.shopService.createDevShop();
+  }
 }

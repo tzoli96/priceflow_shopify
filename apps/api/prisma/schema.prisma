@@ -28,13 +28,134 @@ model Post {
 }
 
 model Shop {
-  id              String    @id @default(uuid())
-  domain          String    @unique
+  id              String         @id @default(uuid())
+  domain          String         @unique
   accessToken     String
   scope           String?
-  isActive        Boolean   @default(true)
-  installedAt     DateTime  @default(now())
+  isActive        Boolean        @default(true)
+  installedAt     DateTime       @default(now())
   uninstalledAt   DateTime?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  templates       Template[]
+  assignments     Assignment[]
+  calculations    Calculation[]
+}
+
+model OAuthSession {
+  id              String       @id @default(uuid())
+  shop            String
+  state           String
+  isOnline        Boolean      @default(false)
+  scope           String?
+  expires         DateTime?
+  accessToken     String?
+  onlineAccessInfo String?     @db.Text
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@index([shop])
+  @@index([state])
+  @@index([createdAt])
+}
+
+model Template {
+  id              String          @id @default(uuid())
+  shopId          String
+  shop            Shop            @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  name            String
+  description     String?
+  pricingFormula  String          @db.Text
+  pricingMeta     Json?
+  scopeType       ScopeType       @default(GLOBAL)
+  scopeValues     String[]
+  isActive        Boolean         @default(true)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  fields          TemplateField[]
+  assignments     Assignment[]
+  calculations    Calculation[]
+
+  @@index([shopId])
+  @@index([shopId, isActive])
+}
+
+model TemplateField {
+  id                String      @id @default(uuid())
+  templateId        String
+  template          Template    @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  key               String
+  type              FieldType
+  label             String
+  required          Boolean     @default(false)
+  placeholder       String?
+  helpText          String?
+  helpContent       Json?
+  validation        Json?
+  options           Json?
+  conditionalRules  Json?
+  useInFormula      Boolean     @default(true)
+  order             Int         @default(0)
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  @@unique([templateId, key])
+  @@index([templateId])
+}
+
+model Assignment {
+  id              String       @id @default(uuid())
+  shopId          String
+  shop            Shop         @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  templateId      String
+  template        Template     @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  priority        Int          @default(0)
+  isActive        Boolean      @default(true)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@index([shopId])
+  @@index([templateId])
+  @@index([shopId, isActive])
+}
+
+model Calculation {
+  id              String       @id @default(uuid())
+  shopId          String
+  shop            Shop         @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  templateId      String
+  template        Template     @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  productId       String
+  productTitle    String?
+  inputs          Json
+  result          Decimal      @db.Decimal(10, 2)
+  breakdown       Json?
+  templateVersion Int          @default(1)
+  sessionId       String?
+  calculatedAt    DateTime     @default(now())
+
+  @@index([shopId])
+  @@index([templateId])
+  @@index([productId])
+  @@index([calculatedAt])
+}
+
+enum ScopeType {
+  PRODUCT
+  COLLECTION
+  VENDOR
+  TAG
+  GLOBAL
+}
+
+enum FieldType {
+  NUMBER
+  TEXT
+  SELECT
+  RADIO
+  CHECKBOX
+  TEXTAREA
+  FILE
 }

@@ -22,9 +22,16 @@ services:
       - PORT=3000
       - HOSTNAME=0.0.0.0
       - WATCHPACK_POLLING=true
+      - API_URL=http://api:4000
+      - AWS_ENDPOINT_URL=http://localstack:4566
+      - AWS_REGION=eu-central-1
+      - AWS_ACCESS_KEY_ID=test
+      - AWS_SECRET_ACCESS_KEY=test
     restart: unless-stopped
     networks:
       - shopify-network
+    depends_on:
+      - localstack
 
   storefront:
     build:

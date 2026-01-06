@@ -18,5 +18,6 @@ scopes = "read_products,write_products,read_orders,read_customers"
 
 [auth]
 redirect_urls = [
+  "http://localhost:4000/api/auth/callback",
   "https://app.teszt.uk/api/auth/callback"
 ]

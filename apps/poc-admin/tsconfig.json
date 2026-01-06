@@ -1,0 +1,30 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "strict": true,
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "jsx": "react-jsx",
+    "types": ["vite/client"],
+    "outDir": "dist",
+    "rootDir": "src",
+    "baseUrl": "src",
+    "paths": {
+      "@/*": ["./*"],
+      "@/domains/*": ["./domains/*"],
+      "@/common/*": ["./domains/common/*"],
+      "@/shared/*": ["./domains/shared/*"],
+      "@/template/*": ["./domains/template/*"],
+      "@/types": ["./domains/shared/types"],
+      "@/constants": ["./domains/shared/constants"],
+      "@/locales/*": ["./domains/shared/locales/*"]
+    }
+  },
+  "include": [
+    "src",
+    "vite.config.ts"
+  ]
+}

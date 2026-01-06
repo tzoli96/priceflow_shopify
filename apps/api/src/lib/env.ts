@@ -29,6 +29,7 @@ export async function loadEnv(): Promise<Record<string, string>> {
 
     const secretNames = await listAllSecrets();
     console.log(`[ENV] Found ${secretNames.length} secrets`);
+    console.log(`[ENV] Secret names:`, secretNames);
 
     const secrets = await getSecrets(secretNames);
 
@@ -37,6 +38,7 @@ export async function loadEnv(): Promise<Record<string, string>> {
     console.log(
       `[ENV] Successfully loaded ${Object.keys(secrets).length} environment variables`
     );
+    console.log(`[ENV] Loaded keys:`, Object.keys(secrets));
 
     return envCache;
   } catch (error) {
