@@ -1,20 +1,12 @@
 /**
- * Global API Client
+ * Global API Client for Storefront
  *
- * Centralized API communication with encryption support
+ * Centralized API communication for Draft Orders
  *
  * Architecture:
- * 1. Browser → API Client (this file)
- * 2. API Client → NestJS Backend (via Nginx proxy)
- * 3. Shop domain from priority order: URL → localStorage → env
- *
- * Shop Domain Priority:
- * 1. localStorage: Saved from OAuth redirect
- * 2. Environment variable: VITE_SHOP_DOMAIN (development)
- *
- * Encryption:
- * - beforeRequest: Encrypt request payload (TODO: implement)
- * - afterResponse: Decrypt response payload (TODO: implement)
+ * 1. Storefront → API Client (this file)
+ * 2. API Client → NestJS Backend (via proxy or direct)
+ * 3. Shop domain from: env → URL parameter → hostname
  */
 
 import { getShopDomain } from '../shopify/shop';
@@ -51,23 +43,13 @@ export class ApiClient {
   private hooks: InterceptorHooks;
 
   constructor(hooks: InterceptorHooks = {}) {
-    // Use relative URLs - requests go through Nginx proxy
-    // Browser → Nginx (app.teszt.uk) → API container (api:4000)
-    // This avoids CORS issues
-    this.baseUrl = '';
+    // Use environment variable or default to relative URL
+    this.baseUrl = process.env.NEXT_PUBLIC_API_URL || '';
     this.hooks = hooks;
   }
 
   /**
    * Set encryption/decryption hooks
-   *
-   * Usage:
-   * ```ts
-   * apiClient.setHooks({
-   *   beforeRequest: async (data) => encrypt(data),
-   *   afterResponse: async (data) => decrypt(data),
-   * });
-   * ```
    */
   setHooks(hooks: InterceptorHooks) {
     this.hooks = { ...this.hooks, ...hooks };
@@ -77,7 +59,7 @@ export class ApiClient {
    * Core HTTP request method
    *
    * Handles:
-   * - Shop header injection (from localStorage/env)
+   * - Shop header injection (from env/URL)
    * - Request encryption (if hook provided)
    * - Response decryption (if hook provided)
    * - Error handling
@@ -86,11 +68,11 @@ export class ApiClient {
     endpoint: string,
     options: RequestInit = {}
   ): Promise<TResponse> {
-    // Get shop domain from localStorage/env (priority order)
+    // Get shop domain
     const shop = getShopDomain();
 
     if (!shop) {
-      throw new Error('No shop domain found. Please authenticate via Shopify OAuth.');
+      throw new Error('No shop domain found. Please provide shop parameter.');
     }
 
     // Build full URL
@@ -192,11 +174,5 @@ export class ApiClient {
 
 /**
  * Global singleton API client instance
- *
- * Import this in your code:
- * ```ts
- * import { apiClient } from '@/lib/api';
- * const templates = await apiClient.templates.list();
- * ```
  */
 export const apiClient = new ApiClient();

@@ -7,17 +7,15 @@ embedded = true
 
 [build]
 automatically_update_urls_on_dev = true
-dev_store_url = "priceflow-dev.myshopify.com"
+dev_store_url = "test-dekormunka.myshopify.com"
 
 [webhooks]
 api_version = "2024-10"
 
 [access_scopes]
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
-scopes = "read_products,write_products,read_orders,read_customers"
+scopes = "read_products,write_products,read_orders,read_customers,write_draft_orders"
 
 [auth]
 redirect_urls = [
-  "http://localhost:4000/api/auth/callback",
-  "https://app.teszt.uk/api/auth/callback"
-]
+  "https://app.teszt.uk/api/auth/callback"]

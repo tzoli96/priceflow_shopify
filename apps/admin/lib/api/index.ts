@@ -33,7 +33,6 @@
 
 import { apiClient } from './client';
 import { templatesApi } from './endpoints/templates';
-import { shopApi } from './endpoints/shop';
 import * as assignmentsApi from './assignments';
 import * as shopifyApi from './shopify';
 
@@ -47,11 +46,6 @@ export const api = {
    * Template endpoints
    */
   templates: templatesApi,
-
-  /**
-   * Shop endpoints (setup & status)
-   */
-  shop: shopApi,
 
   /**
    * Assignment endpoints (PHASE 4)
@@ -103,6 +97,5 @@ export { ApiError } from './client';
  * Export individual endpoint modules for tree-shaking
  */
 export { templatesApi } from './endpoints/templates';
-export { shopApi } from './endpoints/shop';
 export * as assignmentsApi from './assignments';
 export * as shopifyApi from './shopify';

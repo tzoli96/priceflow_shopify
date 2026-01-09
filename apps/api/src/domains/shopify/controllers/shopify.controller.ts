@@ -1,10 +1,11 @@
-import { Controller, Get, Query, Inject, NotFoundException } from '@nestjs/common';
+import { Controller, Get, Query, Param, Inject, NotFoundException } from '@nestjs/common';
 import { ProductFetcherService } from '../services/product-fetcher.service';
 import { ProductResponseDto } from '../dto/product-response.dto';
 import { CollectionResponseDto } from '../dto/collection-response.dto';
 import { ShopId } from '../../common/interceptors/shop-header.interceptor';
 import { SHOP_REPOSITORY } from '../../shop/repositories/shop.repository.interface';
 import type { IShopRepository } from '../../shop/repositories/shop.repository.interface';
+import { ShopifyService } from '../../auth/services/shopify.service';
 
 /**
  * Shopify Controller
@@ -26,6 +27,7 @@ export class ShopifyController {
     private readonly productFetcherService: ProductFetcherService,
     @Inject(SHOP_REPOSITORY)
     private readonly shopRepository: IShopRepository,
+    private readonly shopifyService: ShopifyService,
   ) {}
 
   /**
@@ -99,6 +101,60 @@ export class ShopifyController {
   }
 
   /**
+   * GET /api/shopify/products/:id
+   *
+   * Get single product by ID
+   *
+   * @param shopDomain - Shop domain from header
+   * @param id - Product ID (numeric or GID format)
+   * @returns Single product details
+   */
+  @Get('products/:id')
+  async getProduct(
+    @ShopId() shopDomain: string,
+    @Param('id') id: string,
+  ): Promise<ProductResponseDto> {
+    const accessToken = await this.getAccessToken(shopDomain);
+
+    const client = this.shopifyService.getRestClient(shopDomain, accessToken);
+
+    // Extract numeric ID from GID if needed
+    const numericId = this.extractNumericId(id);
+
+    try {
+      const response = await client.get({
+        path: `/admin/api/2024-10/products/${numericId}.json`,
+      });
+
+      const product = response.body.product;
+
+      return {
+        id: product.id.toString(),
+        title: product.title,
+        vendor: product.vendor,
+        productType: product.product_type,
+        handle: product.handle,
+        tags: product.tags ? product.tags.split(', ') : [],
+        status: product.status,
+        variants: product.variants.map((variant) => ({
+          id: variant.id.toString(),
+          title: variant.title,
+          price: variant.price,
+          sku: variant.sku || '',
+          inventoryQuantity: variant.inventory_quantity || 0,
+        })),
+        images: product.images.map((image) => ({
+          id: image.id.toString(),
+          src: image.src,
+          alt: image.alt || 'Product Image',
+        })),
+      };
+    } catch (error) {
+      throw new NotFoundException(`Product not found: ${id}`);
+    }
+  }
+
+  /**
    * GET /api/shopify/vendors
    *
    * Vendor-ek lekérése (unique lista)
@@ -137,5 +193,19 @@ export class ShopifyController {
     }
 
     return shop.accessToken;
+  }
+
+  /**
+   * Helper: Extract numeric ID from GID or return as-is
+   *
+   * Converts "gid://shopify/Product/123" to "123"
+   * Returns "123" as-is if already numeric
+   */
+  private extractNumericId(id: string): string {
+    if (id.startsWith('gid://')) {
+      const parts = id.split('/');
+      return parts[parts.length - 1];
+    }
+    return id;
   }
 }

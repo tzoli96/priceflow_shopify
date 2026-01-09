@@ -6,11 +6,10 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Page, Layout, Card, Button, InlineStack, Banner, Toast, Frame } from '@shopify/polaris';
+import { Page, Layout, Banner, Toast, Frame } from '@shopify/polaris';
 import { PlusIcon } from '@shopify/polaris-icons';
 import { TemplateList } from '@/components/templates/TemplateList';
 import { LoadingState, ErrorState, EmptyStateCard } from '@/components/ui/UIComponents';
-import { ShopSetup } from '@/components/shop/ShopSetup';
 import { api } from '@/lib/api';
 import type { Template } from '@/types/template';
 
@@ -21,36 +20,11 @@ export default function TemplatesPage() {
   const [error, setError] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [hasShop, setHasShop] = useState<boolean | null>(null);
-  const [checkingShop, setCheckingShop] = useState(true);
 
   useEffect(() => {
-    // Shop domain is fetched from backend session (cookie-based)
-    // No need to check URL params
-    checkShopStatus();
+    // Load templates directly (shop domain from localStorage/env)
+    loadTemplates();
   }, []);
-
-  const checkShopStatus = async () => {
-    try {
-      setCheckingShop(true);
-      const response = await api.shop.checkStatus();
-      setHasShop(response.hasShop);
-
-      if (response.hasShop) {
-        // Shop exists, load templates
-        loadTemplates();
-      } else {
-        // No shop, stop loading
-        setIsLoading(false);
-      }
-    } catch (err: any) {
-      console.error('Failed to check shop status:', err);
-      setError('Nem sikerült ellenőrizni az üzlet státuszát');
-      setIsLoading(false);
-    } finally {
-      setCheckingShop(false);
-    }
-  };
 
   const loadTemplates = async () => {
     try {
@@ -88,26 +62,6 @@ export default function TemplatesPage() {
     router.push('/templates/new');
   };
 
-  // Checking shop status
-  if (checkingShop) {
-    return (
-      <Page title="Sablonok">
-        <LoadingState message="Üzlet státusz ellenőrzése..." />
-      </Page>
-    );
-  }
-
-  // No shop exists - show setup
-  if (hasShop === false) {
-    return (
-      <Frame>
-        <Page title="Sablonok">
-          <ShopSetup />
-        </Page>
-      </Frame>
-    );
-  }
-
   // Loading state
   if (isLoading) {
     return (
@@ -121,7 +75,7 @@ export default function TemplatesPage() {
   if (error) {
     return (
       <Page title="Sablonok">
-        <ErrorState message={error} onRetry={checkShopStatus} />
+        <ErrorState message={error} onRetry={loadTemplates} />
       </Page>
     );
   }

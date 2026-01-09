@@ -58,7 +58,13 @@ export class ShopifyService {
       apiKey: env.SHOPIFY_API_KEY || '',
       apiSecret: env.SHOPIFY_API_SECRET || '',
       host: env.HOST || 'app.teszt.uk',
-      scopes: ['read_products', 'write_products', 'read_orders', 'read_customers'],
+      scopes: [
+        'read_products',
+        'write_products',
+        'read_orders',
+        'read_customers',
+        'write_draft_orders', // Required for Draft Orders API
+      ],
     };
 
     this.shopify = shopifyApi({

@@ -76,7 +76,12 @@ export class ProductFetcherService {
       });
 
       const products = response.body.products || [];
-      const linkHeader = response.headers?.link;
+      const linkHeaderRaw = response.headers?.link;
+
+      // Normalize link header to string (headers can be string or string[])
+      const linkHeader = Array.isArray(linkHeaderRaw)
+        ? linkHeaderRaw[0]
+        : linkHeaderRaw;
 
       // Parse pagination from Link header
       const nextPageInfo = this.extractNextPageInfo(linkHeader);
