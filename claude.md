@@ -338,7 +338,54 @@ For every task:
 
 ---
 
-## 13) Forbidden / Avoid
+## 13) Agent State Management
+
+**IMPORTANT:** Agent state is stored in the repository, NOT in the conversation.
+
+**State File Location:**
+```
+docs/agent/STATE.md
+```
+
+**Purpose:**
+- Persist agent's working context across sessions
+- Track current tasks, decisions, and progress
+- Enable continuation of work later without losing context
+- Document implementation decisions and reasoning
+
+**Rules:**
+1. **ALWAYS read `docs/agent/STATE.md` at the start of a new session**
+2. **ALWAYS update `docs/agent/STATE.md` when:**
+   - Starting a new task
+   - Making architectural decisions
+   - Completing a milestone
+   - Encountering blockers
+   - Changing implementation approach
+3. **State file format:**
+   - Current task(s) and status
+   - Recent changes and decisions
+   - Open questions or blockers
+   - Next steps
+   - Implementation notes
+
+**Example workflow:**
+```
+1. New session starts
+2. Read docs/agent/STATE.md to understand current state
+3. Continue work from where it was left off
+4. Update STATE.md with progress
+5. Session ends → state persisted for next time
+```
+
+**Benefits:**
+- No context loss between sessions
+- Clear audit trail of decisions
+- Easy to resume work after days/weeks
+- Multiple agents can coordinate via shared state
+
+---
+
+## 14) Forbidden / Avoid
 
 - Any testing frameworks/configs/files (Jest/Vitest/Cypress/Playwright).
 - Random global CSS without Tailwind-first or Polaris-first justification.

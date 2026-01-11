@@ -1,13 +1,27 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { AddToCartButton } from '@/components/draft-orders/AddToCartButton';
-import type { ProductContext } from '@/types/draft-order';
+import { AddToCartButton } from '@/components/cart/AddToCartButton';
+
+interface ProductData {
+  productId: string;
+  variantId: string;
+  title: string;
+  variantTitle: string;
+  price: string;
+  compareAtPrice?: string;
+  sku: string;
+  imageUrl: string;
+  availableForSale: boolean;
+}
 
 export default function Home() {
-  const [product, setProduct] = useState<ProductContext | null>(null);
+  const [product, setProduct] = useState<ProductData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Custom pricing multiplier (can be changed based on template/formula)
+  const priceMultiplier = 2;
 
   useEffect(() => {
     // Get URL parameters
@@ -65,7 +79,7 @@ export default function Home() {
       // Find product image
       const productImage = productData.images?.[0]?.src || 'https://via.placeholder.com/400x400?text=Product';
 
-      // Map to ProductContext
+      // Map to ProductData
       setProduct({
         productId: productData.id,
         variantId: selectedVariant.id,
