@@ -132,9 +132,9 @@ export default function Home() {
     );
   }
 
-  const handleError = (error: Error) => {
-    alert(`Error: ${error.message}`);
-  };
+  // Calculate custom price (2x multiplier)
+  const basePrice = parseFloat(product.price);
+  const customPrice = basePrice * priceMultiplier;
 
   return (
     <div style={{
@@ -153,8 +153,6 @@ export default function Home() {
           boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
           overflow: 'hidden'
         }}>
-
-          {/* Product Details */}
           <div style={{ padding: '24px' }}>
             <h1 style={{
               fontSize: '24px',
@@ -175,34 +173,32 @@ export default function Home() {
               </p>
             )}
 
-            {/* Price */}
             <div style={{ marginBottom: '24px' }}>
               <p style={{
                 fontSize: '30px',
                 fontWeight: 'bold',
-                color: '#111827'
+                color: '#111827',
+                margin: 0
               }}>
-                ${product.price}
+                ${customPrice.toFixed(2)}
               </p>
-              {product.compareAtPrice && (
-                <p style={{
-                  fontSize: '14px',
-                  color: '#6b7280',
-                  textDecoration: 'line-through'
-                }}>
-                  ${product.compareAtPrice}
-                </p>
-              )}
             </div>
 
             {/* Add to Cart Button */}
             <AddToCartButton
-              product={product}
-              multiplier={2}
-              buttonText="Add to Cart (2x Price)"
+              variantId={product.variantId}
+              productTitle={product.title}
+              image={product.imageUrl}
+              finalPrice={customPrice}
               quantity={1}
-              onError={handleError}
-              className="w-full"
+              properties={{
+                variant: product.variantTitle,
+                sku: product.sku,
+                pricing_template: 'Custom 2x Multiplier',
+                original_price: basePrice.toFixed(2),
+                multiplier: priceMultiplier.toString(),
+              }}
+              buttonText="Add to Cart"
             />
           </div>
         </div>

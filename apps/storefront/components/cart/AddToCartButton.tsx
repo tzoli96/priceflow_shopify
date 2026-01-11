@@ -81,19 +81,51 @@ export function AddToCartButton({
         throw new Error('Invalid quantity');
       }
 
-      // Add item to cart
-      addItem({
+      const cartItem = {
         variant_id: variantId,
         product_title: productTitle,
         image,
         final_price: finalPrice,
         quantity,
         properties,
-      });
+      };
 
-      // Success callback
-      if (onAddSuccess) {
-        onAddSuccess();
+      // Check if running in iframe (embedded in Shopify)
+      const isEmbedded = window.self !== window.top;
+
+      console.log('[AddToCartButton] isEmbedded:', isEmbedded);
+      console.log('[AddToCartButton] cartItem:', cartItem);
+
+      if (isEmbedded && window.parent) {
+        console.log('[AddToCartButton] Sending postMessage to parent window');
+
+        // Send message to parent window (Shopify domain)
+        window.parent.postMessage(
+          {
+            type: 'ADD_TO_CART',
+            item: cartItem,
+          },
+          '*' // TODO: Replace with specific Shopify domain in production
+        );
+
+        console.log('[AddToCartButton] PostMessage sent successfully');
+
+        // Success callback
+        if (onAddSuccess) {
+          onAddSuccess();
+        }
+      } else {
+        console.log('[AddToCartButton] Standalone mode - using direct LocalStorage');
+
+        // Not embedded - add to local storage directly
+        addItem(cartItem);
+
+        console.log('[AddToCartButton] Item added to LocalStorage');
+
+        // Success callback
+        if (onAddSuccess) {
+          onAddSuccess();
+        }
       }
     } catch (error) {
       console.error('Failed to add item to cart:', error);

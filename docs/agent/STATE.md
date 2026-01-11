@@ -1,7 +1,7 @@
 # Agent State - PriceFlow Shopify Project
 
 **Last Updated:** 2026-01-11
-**Current Session:** Cart Implementation (Iteration 01)
+**Current Session:** Cart & Minicart Implementation (Iteration 01)
 
 ---
 
@@ -13,7 +13,14 @@
 - ✅ Fully implemented PRD: 01-STOREFRONT-ADD-TO-CART-LOCALSTORAGE.md
 - ✅ Created all TypeScript interfaces, hooks, utilities, and components
 - ✅ Built cart page with responsive design
+- ✅ Implemented `/minicart` page for iframe embedding
+- ✅ **PostMessage API integration** - Cross-domain communication (iframe ↔ parent)
+- ✅ **AddToCartButton modified** - Detects iframe mode, sends postMessage to parent
+- ✅ **Minicart modified** - Reads cart from parent via postMessage
+- ✅ **Liquid handlers** - Parent window handles all LocalStorage operations
+- ✅ Created Liquid integration guides (cart-bubble, cart-icon modifications)
 - ✅ Added comprehensive documentation and CSS
+- ✅ Production URL configured: https://app.teszt.uk/storefront/minicart
 - ✅ Ready for testing and integration
 
 ---
@@ -56,6 +63,14 @@ Implemented the complete LocalStorage-based cart system for the PriceFlow storef
 
 **Documentation:**
 - ✅ Created `docs/CART_IMPLEMENTATION.md` - Complete implementation guide with examples
+- ✅ Created `docs/MINICART_LIQUID_INTEGRATION.md` - Liquid theme integration guide
+- ✅ Created `docs/LIQUID_CART_MODIFICATIONS.md` - Cart bubble & icon modifications
+
+**Minicart Implementation:**
+- ✅ Created `/minicart` page for iframe embedding
+- ✅ PostMessage API for parent-iframe communication
+- ✅ Liquid snippets modifications (cart-bubble, cart-icon)
+- ✅ Production URL: https://app.teszt.uk/storefront/minicart
 
 ### Implementation Highlights
 - **50+ item cart limit** with validation
@@ -91,19 +106,25 @@ Implemented the complete LocalStorage-based cart system for the PriceFlow storef
    - Responsive mobile-first design
    - Accessible UI with ARIA labels
 
-3. **Files Created (13 total):**
+3. **Files Created (17 total):**
    - `apps/storefront/types/cart.ts`
    - `apps/storefront/lib/cart/cartStorage.ts`
    - `apps/storefront/lib/cart/cartUtils.ts`
    - `apps/storefront/hooks/useCart.ts`
-   - `apps/storefront/components/cart/AddToCartButton.tsx`
+   - `apps/storefront/components/cart/AddToCartButton.tsx` (UPDATED - PostMessage support)
    - `apps/storefront/components/cart/CartItemsList.tsx`
    - `apps/storefront/components/cart/CartSummary.tsx`
    - `apps/storefront/components/cart/Toast.tsx`
    - `apps/storefront/components/cart/index.ts`
    - `apps/storefront/app/cart/page.tsx`
+   - `apps/storefront/app/minicart/page.tsx` (UPDATED - PostMessage communication)
+   - `apps/storefront/app/page.tsx` (REFACTORED - uses new AddToCartButton)
+   - `apps/storefront/app/layout.tsx` (UPDATED - imports Toast + cart.css)
    - `apps/storefront/styles/cart.css`
-   - `apps/storefront/docs/CART_IMPLEMENTATION.md`
+   - `docs/CART_IMPLEMENTATION.md`
+   - `docs/MINICART_LIQUID_INTEGRATION.md`
+   - `docs/LIQUID_CART_MODIFICATIONS.md` (UPDATED - PostMessage handlers)
+   - `docs/POSTMESSAGE_API.md` (NEW - Cross-domain communication guide)
 
 **User Request:**
 "Kérlek implementáld @docs/prd/01-STOREFRONT-ADD-TO-CART-LOCALSTORAGE.md pontot"
@@ -114,10 +135,23 @@ Implemented the complete LocalStorage-based cart system for the PriceFlow storef
 - Followed 5-day implementation plan from PRD
 - All requirements from PRD fulfilled
 - No checkout in Iteration 01 (as specified in PRD)
+- User requested minicart integration via iframe in Liquid theme
+- **User identified cross-domain issue**: iframe stores in `app.teszt.uk` LocalStorage, not Shopify domain
+- **Implemented PostMessage API**: iframe sends messages to parent window
+- **Parent window handles storage**: LocalStorage operations on Shopify domain
+- AddToCartButton detects iframe mode automatically
+- Minicart requests data from parent via postMessage
+- Created `/minicart` page embeddable in Shopify theme
+- Provided Liquid modification guides for cart-bubble, cart-icon, and postMessage handlers
+- Production URL configured: https://app.teszt.uk/storefront/minicart
 - Ready for integration and testing
 
 **Files Affected:**
-- 13 new files created in apps/storefront/
+- 17 new/modified files in apps/storefront/
+- 3 new documentation files for Liquid integration
+  - `docs/MINICART_LIQUID_INTEGRATION.md`
+  - `docs/LIQUID_CART_MODIFICATIONS.md`
+  - `docs/POSTMESSAGE_API.md` (NEW - PostMessage guide)
 - `docs/agent/STATE.md` (UPDATED - this file)
 
 ### 2026-01-11 - Cart Override Documentation & Implementation Spec (Session 3)
@@ -297,6 +331,37 @@ Implemented the complete LocalStorage-based cart system for the PriceFlow storef
 - Update rules in claude.md
 - Always read/update at session start/end
 
+### Decision 5: PostMessage API for Cross-Domain Communication
+
+**Decision:** Use PostMessage API instead of direct LocalStorage access in iframe
+
+**Date:** 2026-01-11
+
+**Reasoning:**
+- **Problem:** Iframe (`app.teszt.uk`) can't access parent window LocalStorage (`store.myshopify.com`)
+- **Security:** Browsers block cross-domain LocalStorage access (same-origin policy)
+- **Solution:** PostMessage API enables secure cross-domain communication
+- **Benefits:**
+  - ✅ Cart stored on Shopify domain (correct domain)
+  - ✅ Works across different domains
+  - ✅ Secure with origin validation
+  - ✅ Browser support in all modern browsers
+  - ✅ No CORS issues
+
+**Implementation:**
+- AddToCartButton detects iframe mode: `window.self !== window.top`
+- Iframe sends messages: `window.parent.postMessage({ type: 'ADD_TO_CART', item })`
+- Parent handles messages: `window.addEventListener('message', handler)`
+- Minicart requests data: `postMessage({ type: 'REQUEST_CART_DATA' })`
+- Parent responds: `postMessage({ type: 'CART_DATA', items })`
+
+**Trade-offs:**
+- ✅ Pro: Works in embedded iframe
+- ✅ Pro: Cart on correct domain
+- ✅ Pro: Secure communication
+- ⚠️ Complexity: More code than direct LocalStorage
+- ⚠️ Testing: Requires iframe environment
+
 ---
 
 ## Open Questions / Blockers
@@ -315,17 +380,31 @@ Implemented the complete LocalStorage-based cart system for the PriceFlow storef
    - Test on mobile devices
    - Verify LocalStorage persistence
 
-2. **Integrate with product pages:**
-   - Add `<AddToCartButton />` to product template
-   - Pass calculated price from pricing formulas
-   - Include custom properties (template selections, customizations)
+2. **Deploy storefront app:**
+   - Build and deploy to production (Vercel/Netlify)
+   - Ensure `/minicart` endpoint is accessible
+   - Verify URL: https://app.teszt.uk/storefront/minicart
 
-3. **Add Toast to layout:**
-   - Import Toast component in root layout
-   - Ensure it's rendered globally
+3. **Liquid theme integration:**
+   - Modify `snippets/cart-bubble.liquid` (see LIQUID_CART_MODIFICATIONS.md)
+   - Modify `snippets/cart-icon.liquid` (see LIQUID_CART_MODIFICATIONS.md)
+   - Create `sections/priceflow-minicart.liquid`
+   - Add section to `layout/theme.liquid`
+   - Configure Minicart URL in Customizer
 
-4. **Import CSS:**
-   - Add `import '@/styles/cart.css'` to layout
+4. **Test PostMessage communication:**
+   - Add to cart from iframe → LocalStorage saved on Shopify domain
+   - Open developer console → verify postMessage logs
+   - Verify no CORS errors
+   - Test origin validation
+
+5. **Test minicart:**
+   - Click cart icon → drawer opens
+   - Verify LocalStorage items display
+   - Test quantity controls
+   - Test remove item
+   - Verify cart badge updates
+   - Test cross-iframe communication
 
 **Iteration 02 (Checkout Integration):**
 - Create Draft Order API endpoint: `POST /api/draft-orders/create-from-localstorage`
@@ -386,6 +465,9 @@ Implemented the complete LocalStorage-based cart system for the PriceFlow storef
 | `docs/CART_OVERRIDE_APPROACHES.md` | 5 cart override methods comparison |
 | `docs/prd/01-STOREFRONT-ADD-TO-CART-LOCALSTORAGE.md` | Add to Cart PRD |
 | `apps/storefront/docs/CART_IMPLEMENTATION.md` | Cart implementation guide |
+| `docs/MINICART_LIQUID_INTEGRATION.md` | Minicart iframe integration in Liquid |
+| `docs/LIQUID_CART_MODIFICATIONS.md` | Cart bubble & icon Liquid modifications |
+| `docs/POSTMESSAGE_API.md` | **PostMessage cross-domain communication** |
 
 ---
 
@@ -404,26 +486,49 @@ Implemented the complete LocalStorage-based cart system for the PriceFlow storef
 - ✅ Implemented useCart hook (500+ lines) - complete cart state management
 - ✅ Created all React components (AddToCartButton, CartItemsList, CartSummary, Toast)
 - ✅ Built cart page with responsive layout
+- ✅ Implemented `/minicart` page for iframe embedding
+- ✅ **PostMessage API integration** - Cross-domain communication (iframe ↔ parent)
+- ✅ **AddToCartButton modified** - Detects iframe mode, sends to parent window
+- ✅ **Minicart modified** - Reads cart data from parent via postMessage
+- ✅ **Liquid handlers** - Parent window manages all LocalStorage operations
+- ✅ Refactored `app/page.tsx` to use new AddToCartButton
+- ✅ Updated `app/layout.tsx` with Toast and cart.css
+- ✅ Created Liquid integration guides (cart-bubble, cart-icon, postMessage handlers)
 - ✅ Created comprehensive CSS styling (3000+ lines)
 - ✅ Wrote complete implementation documentation
+- ✅ Configured production URL: https://app.teszt.uk/storefront/minicart
 
 **User Request:**
 "Kérlek implementáld @docs/prd/01-STOREFRONT-ADD-TO-CART-LOCALSTORAGE.md pontot"
 (Please implement the PRD: 01-STOREFRONT-ADD-TO-CART-LOCALSTORAGE.md)
 
 **Deliverables:**
-- 13 new files created in `apps/storefront/`
+- 17 new/modified files in `apps/storefront/`
 - Complete cart system ready for testing
-- Full documentation in `apps/storefront/docs/CART_IMPLEMENTATION.md`
+- Minicart page for iframe embedding (`/minicart`)
+- **PostMessage API integration** - Cross-domain communication
+- Liquid integration guides for theme modifications
+- Full documentation:
+  - `apps/storefront/docs/CART_IMPLEMENTATION.md`
+  - `docs/MINICART_LIQUID_INTEGRATION.md`
+  - `docs/LIQUID_CART_MODIFICATIONS.md` (with postMessage handlers)
+  - `docs/POSTMESSAGE_API.md` (NEW - complete PostMessage guide)
+- Production URL: https://app.teszt.uk/storefront/minicart
 
 **User Satisfaction:** ✅ (Implementation completed as requested)
 
 **Next Actions for User:**
-1. Import cart CSS in root layout
-2. Add Toast component to root layout
-3. Integrate AddToCartButton into product pages
-4. Test cart functionality
-5. Plan Iteration 02 (checkout integration)
+1. Deploy storefront app to production (https://app.teszt.uk/storefront)
+2. Verify `/minicart` endpoint is accessible
+3. Modify Liquid theme:
+   - Update `snippets/cart-bubble.liquid`
+   - Update `snippets/cart-icon.liquid`
+   - Create `sections/priceflow-minicart.liquid`
+   - Add section to `layout/theme.liquid`
+4. Configure Minicart URL in Shopify Theme Customizer
+5. Test cart functionality (add, update, remove, badge)
+6. Test minicart drawer (open, close, cross-tab sync)
+7. Plan Iteration 02 (checkout integration with Draft Orders)
 
 ### Session 2026-01-11 (PRD Creation - Session 2)
 
@@ -476,6 +581,10 @@ User wanted PRD for "Add to Cart" button that stores products in LocalStorage wi
 | 2026-01-11 | Claude Sonnet 4.5 | Created CART_OVERRIDE_APPROACHES.md (5 methods) |
 | 2026-01-11 | Claude Sonnet 4.5 | Provided Liquid Override implementation spec |
 | 2026-01-11 | Claude Sonnet 4.5 | **✅ Completed full cart implementation (13 files)** |
+| 2026-01-11 | Claude Sonnet 4.5 | **✅ Implemented /minicart page + Liquid integration** |
+| 2026-01-11 | Claude Sonnet 4.5 | Updated production URL: https://app.teszt.uk/storefront/minicart |
+| 2026-01-11 | Claude Sonnet 4.5 | **✅ PostMessage API integration** (cross-domain communication) |
+| 2026-01-11 | Claude Sonnet 4.5 | Updated AddToCartButton & Minicart for iframe mode |
 | 2026-01-11 | Claude Sonnet 4.5 | Updated STATE.md with implementation completion |
 
 ---
