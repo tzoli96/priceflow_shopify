@@ -71,7 +71,7 @@ export class ProductFetcherService {
       console.log('[ProductFetcherService] Query params:', queryParams);
 
       const response = await client.get({
-        path: '/admin/api/2024-10/products.json',
+        path: 'products',
         query: queryParams,
       });
 

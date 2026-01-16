@@ -51,7 +51,7 @@ export class DraftOrderService {
 
       // Create Draft Order via Shopify Admin API
       const response = await client.post({
-        path: '/admin/api/2024-10/draft_orders.json',
+        path: 'draft_orders',
         data: draftOrderPayload,
       });
 
@@ -97,7 +97,7 @@ export class DraftOrderService {
     try {
       // Get existing draft order
       const getResponse = await client.get({
-        path: `/admin/api/2024-10/draft_orders/${draftOrderId}.json`,
+        path: `draft_orders/${draftOrderId}`,
       });
 
       const draftOrder = getResponse.body.draft_order;
@@ -110,7 +110,7 @@ export class DraftOrderService {
 
       // Update draft order
       const updateResponse = await client.put({
-        path: `/admin/api/2024-10/draft_orders/${draftOrderId}.json`,
+        path: `draft_orders/${draftOrderId}`,
         data: {
           draft_order: {
             line_items: updatedLineItems,
@@ -161,7 +161,7 @@ export class DraftOrderService {
 
     try {
       const response = await client.get({
-        path: `/admin/api/2024-10/draft_orders/${draftOrderId}.json`,
+        path: `draft_orders/${draftOrderId}`,
       });
 
       const draftOrder = response.body.draft_order;
@@ -206,7 +206,7 @@ export class DraftOrderService {
 
     try {
       await client.delete({
-        path: `/admin/api/2024-10/draft_orders/${draftOrderId}.json`,
+        path: `draft_orders/${draftOrderId}`,
       });
 
       console.log('[DraftOrderService] Draft order deleted:', draftOrderId);
@@ -233,7 +233,7 @@ export class DraftOrderService {
 
     try {
       const response = await client.put({
-        path: `/admin/api/2024-10/draft_orders/${draftOrderId}/complete.json`,
+        path: `draft_orders/${draftOrderId}/complete`,
         data: {},
       });
 

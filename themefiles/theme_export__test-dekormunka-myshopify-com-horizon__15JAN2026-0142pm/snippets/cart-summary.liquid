@@ -173,15 +173,19 @@
   if (!window._priceflowCartSummaryInitialized) {
     window._priceflowCartSummaryInitialized = true;
 
-    // Initial update
+    // Initial update with small delay
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', function() {
-        updateCartSummary();
-        attachCheckoutHandlers();
+        setTimeout(function() {
+          updateCartSummary();
+          attachCheckoutHandlers();
+        }, 50);
       });
     } else {
-      updateCartSummary();
-      attachCheckoutHandlers();
+      setTimeout(function() {
+        updateCartSummary();
+        attachCheckoutHandlers();
+      }, 50);
     }
 
     // Listen for cart updates
@@ -193,11 +197,8 @@
         updateCartSummary();
       }
     });
-  } else {
-    // Already initialized, just update and attach handlers to any new elements
-    updateCartSummary();
-    attachCheckoutHandlers();
   }
+  // Don't re-run on duplicate script load
 
   // Export for external use
   window.updatePriceflowCartSummary = updateCartSummary;

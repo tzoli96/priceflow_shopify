@@ -177,24 +177,31 @@
         }
       }
 
-      // Initial update on page load
-      if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', updateCartDrawerState);
-      } else {
-        updateCartDrawerState();
-      }
+      // Prevent duplicate initialization
+      if (!window._priceflowCartDrawerInitialized) {
+        window._priceflowCartDrawerInitialized = true;
 
-      // Listen for cart updates
-      window.addEventListener('cartUpdated', function() {
-        updateCartDrawerState();
-      });
-
-      // Listen for storage changes (cross-tab sync)
-      window.addEventListener('storage', function(event) {
-        if (event.key === STORAGE_KEY) {
-          updateCartDrawerState();
+        // Initial update on page load with small delay
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(updateCartDrawerState, 50);
+          });
+        } else {
+          setTimeout(updateCartDrawerState, 50);
         }
-      });
+
+        // Listen for cart updates
+        window.addEventListener('cartUpdated', function() {
+          updateCartDrawerState();
+        });
+
+        // Listen for storage changes (cross-tab sync)
+        window.addEventListener('storage', function(event) {
+          if (event.key === STORAGE_KEY) {
+            updateCartDrawerState();
+          }
+        });
+      }
     })();
   </script>
 

@@ -123,7 +123,7 @@ export class ShopifyController {
 
     try {
       const response = await client.get({
-        path: `/admin/api/2024-10/products/${numericId}.json`,
+        path: `products/${numericId}`,
       });
 
       const product = response.body.product;

@@ -60,11 +60,15 @@
     }
 
     /**
-     * Update cart bubble
+     * Update cart bubble - SINGLE SOURCE OF TRUTH
+     * This is the ONLY function that should update cart bubble display
      */
     function updateCartBubble() {
+      // ALWAYS read fresh from localStorage
       const items = getCartItems();
-      const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
+      const itemCount = items.reduce((sum, item) => sum + (item.quantity || 0), 0);
+
+      console.log('[CartBubble] updateCartBubble called:', { itemCount, itemsLength: items.length });
 
       // Find all cart bubble elements
       const bubbles = document.querySelectorAll('[data-priceflow-cart-bubble]');
@@ -77,7 +81,7 @@
 
         if (!countElement) return;
 
-        // Update count
+        // Update count based on localStorage (never use event data)
         if (itemCount === 0) {
           // Hide bubble if cart is empty
           bubble.classList.add('visually-hidden');
@@ -104,27 +108,55 @@
             bubble.removeAttribute('data-maintain-ratio');
           }
         }
+
+        // Also update the cart-icon has-cart class
+        const cartIcon = bubble.closest('cart-icon');
+        if (cartIcon) {
+          cartIcon.classList.toggle('header-actions__cart-icon--has-cart', itemCount > 0);
+        }
       });
     }
 
-    // Initial update on page load
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', updateCartBubble);
-    } else {
-      updateCartBubble();
-    }
+    // Prevent duplicate initialization
+    if (!window._priceflowCartBubbleInitialized) {
+      window._priceflowCartBubbleInitialized = true;
 
-    // Listen for cart updates (same page)
-    window.addEventListener('cartUpdated', function(event) {
-      updateCartBubble();
-    });
+      console.log('[CartBubble] Initializing cart bubble system');
 
-    // Listen for storage changes (cross-tab sync)
-    window.addEventListener('storage', function(event) {
-      if (event.key === STORAGE_KEY) {
-        updateCartBubble();
+      // Initial update - run IMMEDIATELY and again after DOM is ready
+      updateCartBubble();
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function() {
+          updateCartBubble();
+        });
       }
-    });
+
+      // Listen for cart updates (same page) - debounced
+      let cartUpdateTimeout = null;
+      window.addEventListener('cartUpdated', function(event) {
+        console.log('[CartBubble] cartUpdated event received');
+        // Debounce to prevent multiple rapid updates
+        if (cartUpdateTimeout) clearTimeout(cartUpdateTimeout);
+        cartUpdateTimeout = setTimeout(updateCartBubble, 10);
+      });
+
+      // Listen for storage changes (cross-tab sync)
+      window.addEventListener('storage', function(event) {
+        if (event.key === STORAGE_KEY) {
+          console.log('[CartBubble] storage event received');
+          updateCartBubble();
+        }
+      });
+
+      // Also listen for pageshow (back/forward navigation)
+      window.addEventListener('pageshow', function(event) {
+        if (event.persisted) {
+          console.log('[CartBubble] pageshow (bfcache) event');
+          updateCartBubble();
+        }
+      });
+    }
 
     // Export function for manual updates
     window.updatePriceflowCartBubble = updateCartBubble;

@@ -73,7 +73,7 @@ export class ShopifyService {
       scopes: this.config.scopes,
       hostName: this.config.host,
       hostScheme: 'https',
-      apiVersion: ApiVersion.October24,
+      apiVersion: ApiVersion.January26,
       isEmbeddedApp: true,
       sessionStorage: this.sessionStorage,
     });

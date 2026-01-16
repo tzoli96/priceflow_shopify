@@ -46,6 +46,15 @@
     });
 
     console.log('[Shopify] PostMessage listener installed ✅');
+
+    // DEBUG: Monitor all cartUpdated events
+    window.addEventListener('cartUpdated', function(e) {
+      console.log('[DEBUG] cartUpdated event fired:', {
+        itemCount: e.detail?.itemCount,
+        items: e.detail?.items?.length,
+        source: new Error().stack
+      });
+    });
   </script>
     {%- if settings.favicon != blank -%}
       <link
