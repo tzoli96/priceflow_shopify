@@ -46,6 +46,7 @@
         <cart-items-component
           class="cart-items-component"
           data-section-id="{{ section.id }}"
+          data-skip-subtree-update
         >
           {%- comment -%} EMPTY CART STATE {%- endcomment -%}
           <div data-priceflow-empty-state style="display: none;">
@@ -206,11 +207,40 @@
   </script>
 
   {% stylesheet %}
+    /* =============================================
+       CART DRAWER LAYOUT - FIXED FOOTER
+       ============================================= */
+
+    /* Dialog base - MUST have fixed height */
+    .cart-drawer__dialog.dialog-drawer {
+      height: 100dvh !important;
+      max-height: 100dvh !important;
+      width: 100% !important;
+      max-width: 420px !important;
+      margin: 0 !important;
+      margin-left: auto !important;
+      padding: 0 !important;
+      overflow: hidden !important;
+    }
+
+    /* Only show flex layout when dialog is open */
+    .cart-drawer__dialog.dialog-drawer[open] {
+      display: flex !important;
+      flex-direction: column !important;
+    }
+
+    @media screen and (max-width: 749px) {
+      .cart-drawer__dialog.dialog-drawer {
+        max-width: 100% !important;
+      }
+    }
+
     .cart-items-component {
-      width: 100%;
-      height: 100%;
-      display: flex;
-      flex-direction: column;
+      width: 100% !important;
+      height: 100% !important;
+      display: flex !important;
+      flex-direction: column !important;
+      overflow: hidden !important;
     }
 
     .cart-drawer__heading .cart-bubble {
@@ -233,34 +263,62 @@
       width: 100%;
       padding: var(--cart-drawer-padding);
       border-bottom: var(--style-border-width) solid none;
-      position: sticky;
-      top: 0;
-      z-index: 1;
+      flex-shrink: 0 !important;
+      z-index: 2;
 
       @media screen and (min-width: 750px) {
         padding: var(--cart-drawer-padding-desktop);
       }
     }
 
-    .cart-drawer__dialog {
-      overflow: hidden;
+    .cart-drawer__inner {
+      height: 100% !important;
+      max-height: 100% !important;
+      overflow: hidden !important;
+      display: flex !important;
+      flex-direction: column !important;
     }
 
-    .cart-drawer__inner {
-      height: 100%;
-      overflow: hidden;
+    [data-priceflow-items-state] {
+      display: flex !important;
+      flex-direction: column !important;
+      flex: 1 1 0% !important;
+      height: 100% !important;
+      max-height: 100% !important;
+      overflow: hidden !important;
     }
 
     .cart-drawer__content {
-      height: calc(100% - var(--header-height));
-      display: flex;
-      flex-direction: column;
+      flex: 1 1 0% !important;
+      display: flex !important;
+      flex-direction: column !important;
+      overflow: hidden !important;
+      min-height: 0 !important;
     }
 
+    /* Scrollable product list */
+    .cart-drawer__items,
+    scroll-hint.cart-drawer__items {
+      flex: 1 1 0% !important;
+      overflow-y: auto !important;
+      overflow-x: hidden !important;
+      min-height: 0 !important;
+      display: block !important;
+    }
+
+    /* Fixed footer - checkout section */
     .cart-drawer__summary {
       background-color: var(--color-background);
-      position: sticky;
-      bottom: 0;
-      z-index: 1;
+      flex-shrink: 0 !important;
+      flex-grow: 0 !important;
+      z-index: 2;
+      border-top: 1px solid rgba(0, 0, 0, 0.1);
+      padding: 16px var(--cart-drawer-padding, 20px) !important;
+    }
+
+    @media screen and (min-width: 750px) {
+      .cart-drawer__summary {
+        padding: 16px var(--cart-drawer-padding-desktop, 24px) !important;
+      }
     }
   {% endstylesheet %}

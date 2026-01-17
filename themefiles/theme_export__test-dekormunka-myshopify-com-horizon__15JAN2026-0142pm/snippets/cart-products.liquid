@@ -13,6 +13,7 @@
   {{ block.shopify_attributes }}
   class="cart-items__wrapper"
   data-priceflow-cart-products
+  data-skip-subtree-update
   {% if settings.product_title_case == 'uppercase' %}
     style="--product-title-case: uppercase;"
   {% endif %}
@@ -486,6 +487,7 @@
     overflow-y: auto !important;
     overflow-x: hidden !important;
     padding: 0 20px !important;
+    min-height: 0 !important;
     scrollbar-width: thin;
     scrollbar-color: rgba(0,0,0,0.2) transparent;
   }
