@@ -1,4 +1,7 @@
-
+{%- comment -%}
+  MODIFIED: Uses LocalStorage (custom-cart-items) instead of Shopify native cart.
+  Empty state title is handled via JavaScript.
+{%- endcomment -%}
 
 {% assign block_settings = block.settings %}
 
@@ -6,16 +9,76 @@
   class="cart-title spacing-style text-{{ block_settings.alignment }}"
   style="{% render 'spacing-style', settings: block_settings %}"
   {{ block.shopify_attributes }}
+  data-priceflow-cart-title
+  data-skip-subtree-update
 >
-  <h1 class="{{ block_settings.type_preset | default: 'h2' }}">
-    {%- if cart.empty? -%}
-      {{ 'content.your_cart_is_empty' | t }}
-    {%- else -%}
-      {{ block_settings.title }}
-      {%- if block_settings.show_count -%}{% render 'cart-bubble' %}{%- endif -%}
-    {%- endif -%}
+  {%- comment -%} Empty cart title - shown via JS when localStorage is empty {%- endcomment -%}
+  <h1 class="{{ block_settings.type_preset | default: 'h2' }}" data-priceflow-empty-title style="display: none;">
+    {{ 'content.your_cart_is_empty' | t }}
+  </h1>
+
+  {%- comment -%} Cart with items title - shown via JS when localStorage has items {%- endcomment -%}
+  <h1 class="{{ block_settings.type_preset | default: 'h2' }}" data-priceflow-items-title style="display: none;">
+    {{ block_settings.title }}
+    {%- if block_settings.show_count -%}{% render 'cart-bubble' %}{%- endif -%}
   </h1>
 </div>
+
+<script>
+(function() {
+  'use strict';
+
+  const STORAGE_KEY = 'custom-cart-items';
+
+  function getCartItems() {
+    try {
+      const items = localStorage.getItem(STORAGE_KEY);
+      return items ? JSON.parse(items) : [];
+    } catch (error) {
+      return [];
+    }
+  }
+
+  function updateCartTitle() {
+    const items = getCartItems();
+    const isEmpty = items.length === 0;
+
+    const emptyTitle = document.querySelector('[data-priceflow-empty-title]');
+    const itemsTitle = document.querySelector('[data-priceflow-items-title]');
+
+    if (emptyTitle) {
+      emptyTitle.style.display = isEmpty ? '' : 'none';
+    }
+    if (itemsTitle) {
+      itemsTitle.style.display = isEmpty ? 'none' : '';
+    }
+  }
+
+  // Prevent duplicate initialization
+  if (!window._priceflowCartTitleInitialized) {
+    window._priceflowCartTitleInitialized = true;
+
+    // Initial update
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', function() {
+        setTimeout(updateCartTitle, 10);
+      });
+    } else {
+      setTimeout(updateCartTitle, 10);
+    }
+
+    // Listen for cart updates
+    window.addEventListener('cartUpdated', updateCartTitle);
+
+    // Listen for storage changes
+    window.addEventListener('storage', function(event) {
+      if (event.key === STORAGE_KEY) {
+        updateCartTitle();
+      }
+    });
+  }
+})();
+</script>
 
 {% stylesheet %}
   .cart-title h1 {

@@ -1,30 +1,33 @@
-
+{%- comment -%}
+  MODIFIED: Uses LocalStorage (custom-cart-items) instead of Shopify native cart.
+  Empty state is handled via JavaScript based on localStorage data.
+{%- endcomment -%}
 
 <cart-items-component
   class="cart-items-component"
   data-section-id="{{ section.id }}"
+  data-skip-subtree-update
 >
   <div class="section-background color-{{ section.settings.color_scheme }}"></div>
   <div
     class="section color-{{ section.settings.color_scheme }} section--{{ section.settings.section_width }}"
   >
     <div
-      class="cart-page spacing-style{% if cart.empty? %} cart-page--empty{% endif %}"
+      class="cart-page spacing-style"
       style="{% render 'spacing-style', settings: section.settings %}"
+      data-priceflow-cart-page
     >
-      <div class="cart-page__title">
+      <div class="cart-page__title" data-priceflow-cart-title-container>
         {%- content_for 'block', id: 'cart-page-title', type: '_cart-title' %}
       </div>
 
-      <div class="cart-page__items">
+      <div class="cart-page__items" data-priceflow-cart-items-container>
         {%- content_for 'block', id: 'cart-page-items', type: '_cart-products' %}
       </div>
 
-      {%- unless cart.empty? -%}
-        <div class="cart-page__summary">
-          {%- content_for 'block', id: 'cart-page-summary', type: '_cart-summary' -%}
-        </div>
-      {%- endunless -%}
+      <div class="cart-page__summary" data-priceflow-cart-summary-container>
+        {%- content_for 'block', id: 'cart-page-summary', type: '_cart-summary' -%}
+      </div>
 
       <div class="cart-page__more-blocks">
         {%- content_for 'blocks' -%}
@@ -32,6 +35,68 @@
     </div>
   </div>
 </cart-items-component>
+
+<script>
+(function() {
+  'use strict';
+
+  const STORAGE_KEY = 'custom-cart-items';
+
+  function getCartItems() {
+    try {
+      const items = localStorage.getItem(STORAGE_KEY);
+      return items ? JSON.parse(items) : [];
+    } catch (error) {
+      console.error('[Cart Page] Failed to load cart items:', error);
+      return [];
+    }
+  }
+
+  function updateCartPageState() {
+    const items = getCartItems();
+    const isEmpty = items.length === 0;
+
+    const cartPage = document.querySelector('[data-priceflow-cart-page]');
+    const summaryContainer = document.querySelector('[data-priceflow-cart-summary-container]');
+
+    if (cartPage) {
+      if (isEmpty) {
+        cartPage.classList.add('cart-page--empty');
+      } else {
+        cartPage.classList.remove('cart-page--empty');
+      }
+    }
+
+    if (summaryContainer) {
+      summaryContainer.style.display = isEmpty ? 'none' : '';
+    }
+  }
+
+  // Prevent duplicate initialization
+  if (!window._priceflowCartPageInitialized) {
+    window._priceflowCartPageInitialized = true;
+
+    // Initial update
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', function() {
+        setTimeout(updateCartPageState, 50);
+      });
+    } else {
+      setTimeout(updateCartPageState, 50);
+    }
+
+    // Listen for cart updates
+    window.addEventListener('cartUpdated', updateCartPageState);
+
+    // Listen for storage changes (cross-tab sync)
+    window.addEventListener('storage', function(event) {
+      if (event.key === STORAGE_KEY) {
+        updateCartPageState();
+      }
+    });
+  }
+})();
+</script>
 
 {% stylesheet %}
   .cart-page {
