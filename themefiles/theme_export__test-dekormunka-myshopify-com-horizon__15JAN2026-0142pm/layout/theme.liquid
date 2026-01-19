@@ -8,10 +8,11 @@
       <script>
     // PostMessage handler for PriceFlow cart
     window.addEventListener('message', function(event) {
-  
+
       const data = event.data;
 
-      if (data.type === 'ADD_TO_CART') {
+      // Handle both ADD_TO_CART (legacy) and PRICEFLOW_ADD_TO_CART (new) message types
+      if (data.type === 'ADD_TO_CART' || data.type === 'PRICEFLOW_ADD_TO_CART') {
 
         // Get existing cart
         let items = [];
@@ -22,26 +23,57 @@
           console.error('[Shopify] Failed to load cart:', e);
         }
 
+        // Extract item data based on message type
+        let itemData;
+        if (data.type === 'PRICEFLOW_ADD_TO_CART') {
+          // New format from ProductConfigurator - price calculated by formula
+          const payload = data.payload;
+          itemData = {
+            variant_id: payload.variantId,
+            product_title: payload.productTitle,
+            image: payload.productImage,
+            final_price: payload.price,           // Calculated price per unit
+            final_line_price: payload.linePrice,  // Calculated total line price
+            quantity: payload.quantity,
+            properties: payload.properties || {}
+          };
+          console.log('[PriceFlow] Adding item with calculated price:', itemData.final_price);
+        } else {
+          // Legacy ADD_TO_CART format
+          itemData = {
+            variant_id: data.item.variant_id,
+            product_title: data.item.product_title,
+            image: data.item.image,
+            final_price: data.item.final_price,
+            final_line_price: data.item.final_price * data.item.quantity,
+            quantity: data.item.quantity,
+            properties: data.item.properties || {}
+          };
+        }
+
         // Add new item with unique ID
         const newItem = {
-          id: data.item.variant_id + ':' + Date.now(),
-          variant_id: data.item.variant_id,
-          product_title: data.item.product_title,
-          image: data.item.image,
-          final_price: data.item.final_price,
-          final_line_price: data.item.final_price * data.item.quantity,
-          quantity: data.item.quantity,
-          properties: data.item.properties || {}
+          id: itemData.variant_id + ':' + Date.now(),
+          ...itemData
         };
 
         items.push(newItem);
 
         // Save to LocalStorage
         localStorage.setItem('custom-cart-items', JSON.stringify(items));
+
         // Update cart badge
         window.dispatchEvent(new CustomEvent('cartUpdated', {
           detail: { items: items }
         }));
+
+        console.log('[PriceFlow] Item added to cart successfully');
+      }
+
+      // Handle checkout redirect
+      if (data.type === 'PRICEFLOW_CHECKOUT' && data.payload?.invoiceUrl) {
+        console.log('[PriceFlow] Redirecting to checkout:', data.payload.invoiceUrl);
+        window.location.href = data.payload.invoiceUrl;
       }
     });
 

@@ -279,7 +279,8 @@ export class PriceCalculatorService {
       quantity,
     );
 
-    // Evaluate formula
+    // Evaluate formula - base_price is available as a variable in the formula
+    // Example formula: "base_price + (width * height / 10000) * unit_m2_price"
     let unitPrice = this.formulaEvaluator.evaluateFormula(
       template.pricingFormula,
       context,
@@ -511,42 +512,19 @@ export class PriceCalculatorService {
   ): PriceBreakdownItem[] {
     const breakdown: PriceBreakdownItem[] = [];
 
-    // Base price
+    // Original base price (for reference)
     breakdown.push({
-      label: 'Alap ár',
+      label: 'Termék alap ára',
       value: basePrice,
       type: 'base',
     });
 
-    // Area calculation if available
-    if (context['area'] !== undefined) {
-      breakdown.push({
-        label: `Terület (${context['area'].toFixed(2)} m²)`,
-        value: context['area'] * (context['unit_m2_price'] || 0),
-        type: 'calculation',
-      });
-    }
-
-    // Perimeter calculation if available
-    if (
-      context['perimeter'] !== undefined &&
-      context['perimeter_price'] !== undefined
-    ) {
-      breakdown.push({
-        label: `Kerület (${context['perimeter'].toFixed(2)} m)`,
-        value: context['perimeter'] * context['perimeter_price'],
-        type: 'calculation',
-      });
-    }
-
-    // Unit price from formula
-    if (unitPrice !== basePrice) {
-      breakdown.push({
-        label: 'Számított egységár',
-        value: unitPrice,
-        type: 'calculation',
-      });
-    }
+    // Calculated unit price from formula
+    breakdown.push({
+      label: 'Számított egységár',
+      value: unitPrice,
+      type: 'calculation',
+    });
 
     // Express surcharge
     if (isExpress && expressMultiplier > 1) {

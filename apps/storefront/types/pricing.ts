@@ -22,6 +22,22 @@ export interface FieldOption {
   value: string;
   label: string;
   price?: number;
+  imageUrl?: string; // Kép URL (S3 vagy külső)
+  description?: string; // Hosszabb leírás
+  features?: string[]; // Felsorolás pontok (bullet points)
+}
+
+/**
+ * Mező megjelenítési stílus
+ */
+export type FieldDisplayStyle = 'default' | 'card' | 'chip';
+
+/**
+ * Előre definiált érték (gyorsgombok)
+ */
+export interface PresetValue {
+  label: string;
+  value: number | string | Record<string, number>;
 }
 
 /**
@@ -50,6 +66,8 @@ export interface TemplateField {
   options?: FieldOption[];
   useInFormula: boolean;
   order: number;
+  displayStyle?: FieldDisplayStyle; // Megjelenítési stílus
+  presetValues?: PresetValue[]; // Előre definiált értékek (gyorsgombok)
 }
 
 /**
@@ -90,6 +108,10 @@ export interface ProductTemplateInfo {
     quantityLimits?: QuantityLimits;
     // Discount tiers
     discountTiers?: DiscountTier[];
+    // Notes field
+    hasNotesField?: boolean;
+    notesFieldLabel?: string;
+    notesFieldPlaceholder?: string;
   };
 }
 
@@ -107,6 +129,7 @@ export interface PriceBreakdownItem {
  */
 export interface CalculatePriceRequest {
   templateId: string;
+  productId: string;
   fieldValues: Record<string, number>;
   quantity: number;
   basePrice: number;

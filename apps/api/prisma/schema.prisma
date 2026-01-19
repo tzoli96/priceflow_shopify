@@ -89,6 +89,11 @@ model Template {
   expressLabel        String?   // "Expressz (3 munkanap)"
   normalLabel         String?   // "Normál (7-10 munkanap)"
 
+  // Megjegyzés mező
+  hasNotesField           Boolean   @default(false)
+  notesFieldLabel         String?   // "Megjegyzés"
+  notesFieldPlaceholder   String?   // "Írja ide az egyedi kéréseit..."
+
   fields          TemplateField[]
   assignments     Assignment[]
   calculations    Calculation[]
@@ -109,10 +114,12 @@ model TemplateField {
   helpText          String?
   helpContent       Json?
   validation        Json?
-  options           Json?
+  options           Json?       // FieldOption[] - tartalmazza imageUrl, description, features mezőket is
   conditionalRules  Json?
   useInFormula      Boolean     @default(true)
   order             Int         @default(0)
+  displayStyle      String?     // 'default' | 'card' | 'chip'
+  presetValues      Json?       // PresetValue[] - előre definiált értékek
   createdAt         DateTime    @default(now())
   updatedAt         DateTime    @updatedAt
 

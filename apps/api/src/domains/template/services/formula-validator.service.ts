@@ -44,6 +44,15 @@ export class FormulaValidatorService {
   private readonly allowedOperators = ['+', '-', '*', '/', '^', '(', ')'];
 
   /**
+   * System variables automatically available in formulas
+   * These are provided by the pricing engine at runtime
+   */
+  private readonly systemVariables = [
+    'base_price', // Product base price from Shopify
+    'quantity', // Order quantity
+  ];
+
+  /**
    * Formula validálása
    *
    * @param formula - Pricing formula string
@@ -207,6 +216,12 @@ export class FormulaValidatorService {
     const errors: string[] = [];
     const warnings: string[] = [];
 
+    // Combine user fields with system variables
+    const allAvailableVariables = [
+      ...availableFields,
+      ...this.systemVariables,
+    ];
+
     // Extract variables: alphanumeric + underscore
     const variableRegex = /\b([a-z_][a-z0-9_]*)\b/gi;
     const matches = formula.matchAll(variableRegex);
@@ -222,15 +237,15 @@ export class FormulaValidatorService {
 
       usedVariables.add(variable);
 
-      // Check if variable exists in available fields
-      if (!availableFields.includes(variable)) {
+      // Check if variable exists in available fields or system variables
+      if (!allAvailableVariables.includes(variable)) {
         errors.push(
-          `Unknown variable: "${variable}". Available fields: ${availableFields.join(', ')}`,
+          `Unknown variable: "${variable}". Available: ${allAvailableVariables.join(', ')}`,
         );
       }
     }
 
-    // Warning: unused fields
+    // Warning: unused user fields (not system variables)
     const unusedFields = availableFields.filter((f) => !usedVariables.has(f));
     if (unusedFields.length > 0) {
       warnings.push(

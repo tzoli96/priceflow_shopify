@@ -1,15 +1,34 @@
 /**
  * PriceFlow Configurator Styles
  *
- * Base styles for the product configurator widget.
+ * Dekormunka-inspired design with magenta/pink accent colors.
  * These can be overridden by the Shopify theme.
  */
+
+/* CSS Variables - Dekormunka Color Scheme */
+:root {
+  --priceflow-primary: #ec4899;
+  --priceflow-primary-hover: #db2777;
+  --priceflow-primary-light: #fdf2f8;
+  --priceflow-primary-border: #fbcfe8;
+  --priceflow-success: #059669;
+  --priceflow-success-light: #ecfdf5;
+  --priceflow-error: #dc2626;
+  --priceflow-error-light: #fef2f2;
+  --priceflow-warning: #d97706;
+  --priceflow-warning-light: #fef3c7;
+  --priceflow-text: #1f2937;
+  --priceflow-text-secondary: #6b7280;
+  --priceflow-border: #e5e7eb;
+  --priceflow-bg: #ffffff;
+  --priceflow-bg-secondary: #f9fafb;
+}
 
 /* Widget container (for iframe embed) */
 .priceflow-widget-container {
   min-height: 100%;
-  padding: 1rem;
-  background: #fff;
+  padding: 1.5rem;
+  background: var(--priceflow-bg);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
     Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
 }
@@ -42,10 +61,10 @@
 }
 
 .priceflow-spinner {
-  width: 20px;
-  height: 20px;
-  border: 2px solid #e5e5e5;
-  border-top-color: #333;
+  width: 24px;
+  height: 24px;
+  border: 3px solid var(--priceflow-primary-border);
+  border-top-color: var(--priceflow-primary);
   border-radius: 50%;
   animation: priceflow-spin 0.8s linear infinite;
 }
@@ -107,8 +126,8 @@
 
 .priceflow-input:focus {
   outline: none;
-  border-color: #2563eb;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  border-color: var(--priceflow-primary);
+  box-shadow: 0 0 0 3px rgba(236, 72, 153, 0.15);
 }
 
 .priceflow-textarea {
@@ -153,8 +172,8 @@
 }
 
 .priceflow-radio-option.selected {
-  border-color: #2563eb;
-  background-color: #eff6ff;
+  border-color: var(--priceflow-primary);
+  background-color: var(--priceflow-primary-light);
 }
 
 .priceflow-radio-option input[type='radio'] {
@@ -347,8 +366,8 @@
 }
 
 .priceflow-express-option.selected {
-  border-color: #2563eb;
-  background-color: #eff6ff;
+  border-color: var(--priceflow-primary);
+  background-color: var(--priceflow-primary-light);
 }
 
 .priceflow-express-option input[type='radio'] {
@@ -505,19 +524,82 @@
   padding: 1rem 1.5rem;
   border: none;
   border-radius: 8px;
-  background: #2563eb;
+  background: var(--priceflow-primary);
   color: #fff;
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.15s;
+  transition: all 0.2s;
+  box-shadow: 0 2px 4px rgba(236, 72, 153, 0.2);
 }
 
 .priceflow-add-to-cart:hover:not(:disabled) {
-  background: #1d4ed8;
+  background: var(--priceflow-primary-hover);
+  box-shadow: 0 4px 8px rgba(236, 72, 153, 0.3);
+  transform: translateY(-1px);
 }
 
 .priceflow-add-to-cart:disabled {
-  opacity: 0.5;
+  background: #d1d5db;
+  box-shadow: none;
   cursor: not-allowed;
+  transform: none;
+}
+
+/* Layout styles for two-column view */
+.priceflow-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+@media (min-width: 1024px) {
+  .priceflow-layout {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+
+  .priceflow-form-section {
+    flex: 1;
+    max-width: 640px;
+  }
+}
+
+/* Card-style field container */
+.priceflow-field-card {
+  margin-bottom: 1rem;
+}
+
+/* Price display with pink accent */
+.priceflow-price-display {
+  margin-bottom: 1.5rem;
+  padding: 1.25rem;
+  background: linear-gradient(135deg, var(--priceflow-primary-light) 0%, #fff 100%);
+  border: 1px solid var(--priceflow-primary-border);
+  border-radius: 12px;
+}
+
+.priceflow-price-value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--priceflow-primary);
+}
+
+/* Toggle link with pink color */
+.priceflow-breakdown-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-top: 0.75rem;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--priceflow-primary);
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.priceflow-breakdown-toggle:hover {
+  color: var(--priceflow-primary-hover);
+  text-decoration: underline;
 }

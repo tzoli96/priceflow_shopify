@@ -31,3 +31,20 @@ export const FORMULA_OPERATORS = [
   { symbol: '(', description: 'Bal zárójel' },
   { symbol: ')', description: 'Jobb zárójel' },
 ] as const;
+
+/**
+ * System variables available in formulas
+ * These are automatically provided by the pricing engine
+ */
+export const FORMULA_SYSTEM_VARIABLES = [
+  {
+    name: 'base_price',
+    description: 'Termék alap ára (Shopify-ból)',
+    example: 'base_price + 500',
+  },
+  {
+    name: 'quantity',
+    description: 'Rendelt mennyiség',
+    example: 'base_price * quantity',
+  },
+] as const;

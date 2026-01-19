@@ -208,8 +208,7 @@ export default function Home() {
   const basePrice = parseFloat(product.price) || 0;
 
   return (
-    <div className="123
-    priceflow-widget-container">
+    <div className="priceflow-widget-container">
       <ProductConfigurator
         productId={product.productId}
         variantId={product.variantId}

@@ -30,12 +30,20 @@ import { create, all, MathJsInstance } from 'mathjs';
 @Injectable()
 export class FormulaEvaluatorService {
   private readonly math: MathJsInstance;
+  private readonly safeEvaluate: (
+    expr: string,
+    scope?: Record<string, number>,
+  ) => number;
 
   constructor() {
     // Create a restricted mathjs instance
     this.math = create(all);
 
+    // Save reference to the original evaluate function before disabling it
+    this.safeEvaluate = this.math.evaluate.bind(this.math);
+
     // Configure limited functions for security
+    // This prevents users from calling these functions within formulas
     this.math.import(
       {
         import: function () {
@@ -118,8 +126,8 @@ export class FormulaEvaluatorService {
       // Create a safe scope with only the provided context variables
       const scope = { ...context };
 
-      // Evaluate the formula in the safe scope
-      const result = this.math.evaluate(processedFormula, scope);
+      // Evaluate the formula in the safe scope using the saved evaluate function
+      const result = this.safeEvaluate(processedFormula, scope);
 
       // Ensure result is a number
       if (typeof result !== 'number' || isNaN(result)) {
@@ -217,8 +225,6 @@ export class FormulaEvaluatorService {
    * Speciális változók, amiket a rendszer automatikusan biztosít:
    * - base_price: Termék alapára
    * - quantity: Mennyiség
-   * - area: Terület (width * height / 10000) m²-ben
-   * - perimeter: Kerület (2 * (width + height) / 100) méterben
    *
    * @param fieldValues - Felhasználó által megadott mező értékek
    * @param basePrice - Termék alapára
@@ -230,31 +236,10 @@ export class FormulaEvaluatorService {
     basePrice: number,
     quantity: number,
   ): Record<string, number> {
-    const context: Record<string, number> = {
+    return {
       ...fieldValues,
       base_price: basePrice,
       quantity,
     };
-
-    // Auto-calculate area if width and height are present
-    const widthKey = Object.keys(fieldValues).find((k) =>
-      k.toLowerCase().includes('width'),
-    );
-    const heightKey = Object.keys(fieldValues).find((k) =>
-      k.toLowerCase().includes('height'),
-    );
-
-    if (widthKey && heightKey) {
-      const width = fieldValues[widthKey];
-      const height = fieldValues[heightKey];
-
-      // Calculate area in m² (assuming cm input)
-      context['area'] = (width * height) / 10000;
-
-      // Calculate perimeter in meters (assuming cm input)
-      context['perimeter'] = (2 * (width + height)) / 100;
-    }
-
-    return context;
   }
 }

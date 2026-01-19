@@ -1,0 +1,915 @@
+/**
+ * Dekormunka Configurator Styles
+ *
+ * Pixel-perfect recreation of Dekormunka design
+ * Pink/magenta color scheme with collapsible sections
+ */
+
+/* ===== CSS Variables ===== */
+:root {
+  --dm-primary: #e91e8c;
+  --dm-primary-dark: #c4177a;
+  --dm-primary-light: #fce4f3;
+  --dm-primary-lighter: #fdf2f8;
+  --dm-text: #333333;
+  --dm-text-secondary: #666666;
+  --dm-text-muted: #999999;
+  --dm-border: #e5e5e5;
+  --dm-border-light: #f0f0f0;
+  --dm-bg: #ffffff;
+  --dm-bg-section: #fafafa;
+  --dm-success: #22c55e;
+  --dm-error: #ef4444;
+  --dm-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  --dm-shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.12);
+  --dm-radius: 8px;
+  --dm-radius-lg: 12px;
+}
+
+/* ===== Main Container ===== */
+.dekormunka-configurator {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color: var(--dm-text);
+  background: var(--dm-bg);
+  min-height: 100vh;
+}
+
+.dekormunka-layout {
+  display: flex;
+  gap: 24px;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.dekormunka-form {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.dekormunka-sidebar {
+  width: 320px;
+  flex-shrink: 0;
+}
+
+/* ===== Collapsible Sections ===== */
+.collapsible-section {
+  background: var(--dm-bg);
+  border: 1px solid var(--dm-border);
+  border-radius: var(--dm-radius);
+  overflow: hidden;
+}
+
+.collapsible-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  background: linear-gradient(135deg, var(--dm-primary) 0%, var(--dm-primary-dark) 100%);
+  color: white;
+  border: none;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.collapsible-header:hover {
+  opacity: 0.95;
+}
+
+.collapsible-header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.collapsible-number {
+  font-weight: 700;
+  font-size: 18px;
+}
+
+.collapsible-title {
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.collapsible-chevron {
+  transition: transform 0.3s ease;
+  color: white;
+}
+
+.collapsible-chevron.open {
+  transform: rotate(180deg);
+}
+
+.collapsible-content {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+}
+
+.collapsible-content.open {
+  max-height: 2000px;
+}
+
+.collapsible-content-inner {
+  padding: 20px;
+  background: var(--dm-bg-section);
+}
+
+/* ===== Size Section ===== */
+.dekormunka-size-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.dekormunka-size-inputs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.dekormunka-size-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dekormunka-label {
+  font-weight: 500;
+  font-size: 14px;
+  color: var(--dm-text);
+}
+
+.dekormunka-input-with-unit {
+  display: flex;
+  align-items: center;
+  background: white;
+  border: 1px solid var(--dm-border);
+  border-radius: var(--dm-radius);
+  overflow: hidden;
+}
+
+.dekormunka-input {
+  flex: 1;
+  padding: 12px 16px;
+  border: none;
+  font-size: 16px;
+  outline: none;
+}
+
+.dekormunka-input:focus {
+  box-shadow: inset 0 0 0 2px var(--dm-primary-light);
+}
+
+.dekormunka-unit {
+  padding: 12px 16px;
+  background: var(--dm-bg-section);
+  color: var(--dm-text-secondary);
+  font-size: 14px;
+  border-left: 1px solid var(--dm-border);
+}
+
+.dekormunka-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.dekormunka-preset-chip {
+  padding: 8px 16px;
+  background: white;
+  border: 1px solid var(--dm-border);
+  border-radius: 20px;
+  font-size: 13px;
+  color: var(--dm-text);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.dekormunka-preset-chip:hover {
+  border-color: var(--dm-primary);
+  color: var(--dm-primary);
+}
+
+.dekormunka-preset-chip.selected {
+  background: var(--dm-primary);
+  border-color: var(--dm-primary);
+  color: white;
+}
+
+/* ===== Card Selector (Material Selection) ===== */
+.card-selector {
+  /* Uses CardSelector component styles */
+}
+
+/* ===== Chip Group ===== */
+.dekormunka-chip-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.dekormunka-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  background: white;
+  border: 2px solid var(--dm-border);
+  border-radius: 25px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--dm-text);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.dekormunka-chip:hover {
+  border-color: var(--dm-primary);
+  color: var(--dm-primary);
+}
+
+.dekormunka-chip.selected {
+  background: var(--dm-primary);
+  border-color: var(--dm-primary);
+  color: white;
+}
+
+.dekormunka-chip-price {
+  font-size: 12px;
+  opacity: 0.8;
+}
+
+/* ===== Radio Cards ===== */
+.dekormunka-radio-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.dekormunka-radio-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  background: white;
+  border: 2px solid var(--dm-border);
+  border-radius: var(--dm-radius);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.dekormunka-radio-card:hover {
+  border-color: var(--dm-primary-light);
+}
+
+.dekormunka-radio-card.selected {
+  border-color: var(--dm-primary);
+  background: var(--dm-primary-lighter);
+}
+
+.dekormunka-radio-card input[type="radio"] {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--dm-primary);
+}
+
+.dekormunka-radio-card-content {
+  flex: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.dekormunka-radio-card-label {
+  font-weight: 500;
+}
+
+.dekormunka-radio-card-price {
+  color: var(--dm-primary);
+  font-weight: 600;
+}
+
+/* ===== Checkbox Extras ===== */
+.dekormunka-extras {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.dekormunka-checkbox-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px 20px;
+  background: white;
+  border: 2px solid var(--dm-border);
+  border-radius: var(--dm-radius);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.dekormunka-checkbox-card:hover {
+  border-color: var(--dm-primary-light);
+}
+
+.dekormunka-checkbox-card input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--dm-primary);
+  margin-top: 2px;
+}
+
+.dekormunka-checkbox-content {
+  flex: 1;
+}
+
+.dekormunka-checkbox-label {
+  font-weight: 600;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.dekormunka-checkbox-help {
+  font-size: 13px;
+  color: var(--dm-text-secondary);
+  line-height: 1.5;
+}
+
+/* ===== Quantity Section ===== */
+.dekormunka-quantity-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.dekormunka-quantity-controls {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--dm-border);
+  border-radius: var(--dm-radius);
+  overflow: hidden;
+  background: white;
+}
+
+.dekormunka-qty-btn {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--dm-bg-section);
+  border: none;
+  font-size: 24px;
+  color: var(--dm-text);
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.dekormunka-qty-btn:hover:not(:disabled) {
+  background: var(--dm-border);
+}
+
+.dekormunka-qty-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.dekormunka-qty-input {
+  width: 80px;
+  height: 48px;
+  text-align: center;
+  border: none;
+  border-left: 1px solid var(--dm-border);
+  border-right: 1px solid var(--dm-border);
+  font-size: 18px;
+  font-weight: 600;
+  outline: none;
+}
+
+.dekormunka-qty-presets {
+  display: flex;
+  gap: 10px;
+}
+
+.dekormunka-qty-preset {
+  padding: 10px 24px;
+  background: white;
+  border: 1px solid var(--dm-border);
+  border-radius: 20px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.dekormunka-qty-preset:hover {
+  border-color: var(--dm-primary);
+  color: var(--dm-primary);
+}
+
+.dekormunka-qty-preset.selected {
+  background: var(--dm-primary);
+  border-color: var(--dm-primary);
+  color: white;
+}
+
+.dekormunka-qty-error {
+  color: var(--dm-error);
+  font-size: 13px;
+}
+
+.dekormunka-discount-info {
+  text-align: center;
+  padding-top: 12px;
+  border-top: 1px solid var(--dm-border-light);
+}
+
+.dekormunka-discount-title {
+  font-size: 13px;
+  color: var(--dm-text-secondary);
+  display: block;
+  margin-bottom: 8px;
+}
+
+.dekormunka-discount-tiers {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.dekormunka-discount-tier {
+  padding: 6px 12px;
+  background: var(--dm-bg-section);
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--dm-text-secondary);
+}
+
+.dekormunka-discount-tier.active {
+  background: var(--dm-success);
+  color: white;
+}
+
+/* ===== Express Section ===== */
+.dekormunka-express-section {
+  display: flex;
+  gap: 16px;
+}
+
+.dekormunka-express-option {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 20px;
+  background: white;
+  border: 2px solid var(--dm-border);
+  border-radius: var(--dm-radius);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.dekormunka-express-option:hover {
+  border-color: var(--dm-primary-light);
+}
+
+.dekormunka-express-option.selected {
+  border-color: var(--dm-primary);
+  background: var(--dm-primary-lighter);
+}
+
+.dekormunka-express-option input[type="radio"] {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--dm-primary);
+}
+
+.dekormunka-express-content {
+  flex: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.dekormunka-express-label {
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dekormunka-express-badge {
+  padding: 2px 8px;
+  background: #fbbf24;
+  color: #78350f;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.dekormunka-express-price {
+  font-weight: 600;
+  color: var(--dm-text);
+}
+
+/* ===== Graphics/File Upload Section ===== */
+.dekormunka-graphics-section {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.dekormunka-graphics-options {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.dekormunka-graphics-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  background: white;
+  border: 1px solid var(--dm-border);
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.dekormunka-graphics-option:hover {
+  border-color: var(--dm-primary);
+}
+
+.dekormunka-graphics-option input[type="radio"] {
+  accent-color: var(--dm-primary);
+}
+
+/* File Upload */
+.file-upload {
+  width: 100%;
+}
+
+.file-upload-dropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  background: white;
+  border: 2px dashed var(--dm-border);
+  border-radius: var(--dm-radius);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.file-upload-dropzone:hover,
+.file-upload-dropzone.dragging {
+  border-color: var(--dm-primary);
+  background: var(--dm-primary-lighter);
+}
+
+.file-upload-input {
+  display: none;
+}
+
+.file-upload-upload-icon {
+  width: 48px;
+  height: 48px;
+  color: var(--dm-text-muted);
+  margin-bottom: 16px;
+}
+
+.file-upload-text {
+  text-align: center;
+}
+
+.file-upload-main-text {
+  display: block;
+  font-weight: 500;
+  color: var(--dm-primary);
+  margin-bottom: 8px;
+}
+
+.file-upload-sub-text {
+  font-size: 13px;
+  color: var(--dm-text-muted);
+  line-height: 1.6;
+}
+
+.file-upload-selected {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  background: var(--dm-primary-lighter);
+  border: 2px solid var(--dm-primary);
+  border-radius: var(--dm-radius);
+}
+
+.file-upload-file-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.file-upload-icon {
+  width: 32px;
+  height: 32px;
+  color: var(--dm-primary);
+}
+
+.file-upload-file-details {
+  display: flex;
+  flex-direction: column;
+}
+
+.file-upload-filename {
+  font-weight: 500;
+  color: var(--dm-text);
+}
+
+.file-upload-filesize {
+  font-size: 12px;
+  color: var(--dm-text-secondary);
+}
+
+.file-upload-remove {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--dm-text-muted);
+  transition: color 0.2s;
+}
+
+.file-upload-remove:hover {
+  color: var(--dm-error);
+}
+
+.file-upload-remove svg {
+  width: 20px;
+  height: 20px;
+}
+
+.file-upload-error {
+  margin-top: 8px;
+  color: var(--dm-error);
+  font-size: 13px;
+}
+
+.file-upload-help {
+  margin-top: 8px;
+  color: var(--dm-text-muted);
+  font-size: 13px;
+}
+
+/* ===== Notes Section ===== */
+.dekormunka-notes-section {
+  width: 100%;
+}
+
+.dekormunka-notes-textarea {
+  width: 100%;
+  padding: 16px;
+  background: white;
+  border: 1px solid var(--dm-border);
+  border-radius: var(--dm-radius);
+  font-size: 14px;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 100px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.dekormunka-notes-textarea:focus {
+  border-color: var(--dm-primary);
+}
+
+/* ===== Summary Sidebar ===== */
+.dekormunka-summary {
+  position: sticky;
+  top: 24px;
+  background: white;
+  border: 1px solid var(--dm-border);
+  border-radius: var(--dm-radius-lg);
+  overflow: hidden;
+  box-shadow: var(--dm-shadow);
+}
+
+.dekormunka-summary-title {
+  padding: 20px;
+  margin: 0;
+  background: linear-gradient(135deg, var(--dm-primary) 0%, var(--dm-primary-dark) 100%);
+  color: white;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.dekormunka-summary-list {
+  padding: 20px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.dekormunka-summary-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--dm-border-light);
+  font-size: 14px;
+}
+
+.dekormunka-summary-item:last-child {
+  border-bottom: none;
+}
+
+.dekormunka-summary-label {
+  color: var(--dm-text-secondary);
+}
+
+.dekormunka-summary-value {
+  font-weight: 500;
+  color: var(--dm-text);
+  text-align: right;
+  max-width: 60%;
+}
+
+.dekormunka-summary-notes {
+  font-size: 12px;
+  font-style: italic;
+}
+
+.dekormunka-summary-discount {
+  padding: 0 20px 16px;
+}
+
+.dekormunka-discount-badge {
+  display: inline-block;
+  padding: 6px 12px;
+  background: #dcfce7;
+  color: #166534;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.dekormunka-summary-total {
+  padding: 20px;
+  background: var(--dm-bg-section);
+  text-align: center;
+  border-top: 1px solid var(--dm-border);
+}
+
+.dekormunka-original-price {
+  display: block;
+  text-decoration: line-through;
+  color: var(--dm-text-muted);
+  font-size: 14px;
+  margin-bottom: 4px;
+}
+
+.dekormunka-final-price {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--dm-primary);
+}
+
+.dekormunka-calculating {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--dm-text-secondary);
+}
+
+.dekormunka-spinner-small {
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--dm-border);
+  border-top-color: var(--dm-primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.dekormunka-add-to-cart {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: calc(100% - 40px);
+  margin: 0 20px 20px;
+  padding: 16px 24px;
+  background: var(--dm-primary);
+  color: white;
+  border: none;
+  border-radius: var(--dm-radius);
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.dekormunka-add-to-cart:hover:not(:disabled) {
+  background: var(--dm-primary-dark);
+  transform: translateY(-2px);
+  box-shadow: var(--dm-shadow-lg);
+}
+
+.dekormunka-add-to-cart:disabled {
+  background: var(--dm-border);
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.dekormunka-cart-icon {
+  width: 20px;
+  height: 20px;
+}
+
+/* ===== Loading & Error States ===== */
+.dekormunka-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  gap: 16px;
+  color: var(--dm-text-secondary);
+}
+
+.dekormunka-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--dm-border);
+  border-top-color: var(--dm-primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.dekormunka-error {
+  padding: 20px;
+  background: #fef2f2;
+  color: var(--dm-error);
+  border-radius: var(--dm-radius);
+  text-align: center;
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 1024px) {
+  .dekormunka-layout {
+    flex-direction: column;
+  }
+
+  .dekormunka-sidebar {
+    width: 100%;
+  }
+
+  .dekormunka-summary {
+    position: relative;
+    top: 0;
+  }
+
+  .dekormunka-express-section {
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 640px) {
+  .dekormunka-layout {
+    padding: 16px;
+  }
+
+  .collapsible-header {
+    padding: 14px 16px;
+  }
+
+  .collapsible-content-inner {
+    padding: 16px;
+  }
+
+  .dekormunka-size-inputs {
+    grid-template-columns: 1fr;
+  }
+
+  .dekormunka-graphics-options {
+    flex-direction: column;
+  }
+}

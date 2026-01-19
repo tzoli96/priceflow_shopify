@@ -17,7 +17,7 @@ import {
   Divider,
 } from '@shopify/polaris';
 import type { TemplateField } from '@/types/template';
-import { FORMULA_OPERATORS, FORMULA_FUNCTIONS } from '@/lib/constants/template';
+import { FORMULA_OPERATORS, FORMULA_FUNCTIONS, FORMULA_SYSTEM_VARIABLES } from '@/lib/constants/template';
 
 interface FormulaBuilderProps {
   formula: string;
@@ -75,46 +75,77 @@ export const FormulaBuilder: React.FC<FormulaBuilderProps> = ({
 
   return (
     <BlockStack gap="400">
-      {/* Field Buttons */}
-      {formulaFields.length > 0 ? (
-        <Card>
-          <BlockStack gap="300">
-            <Text variant="headingSm" as="h4">
-              Elérhető mezők a képletben (kattints a beszúráshoz)
+      {/* All Available Variables */}
+      <Card>
+        <BlockStack gap="400">
+          <Text variant="headingSm" as="h4">
+            Elérhető mezők a képletben (kattints a beszúráshoz)
+          </Text>
+
+          {/* System Variables */}
+          <BlockStack gap="200">
+            <Text as="p" variant="bodySm" fontWeight="semibold">
+              Rendszer változók:
             </Text>
             <InlineStack gap="200" wrap>
-              {formulaFields.map((field) => (
+              {FORMULA_SYSTEM_VARIABLES.map((variable) => (
                 <Button
-                  key={field.key}
+                  key={variable.name}
                   size="slim"
-                  onClick={() => handleFieldClick(field.key)}
-                  tone="success"
+                  onClick={() => handleFieldClick(variable.name)}
+                  tone="critical"
                 >
-                  {field.key}
-                  {field.label && field.label !== field.key && (
-                    <span style={{ marginLeft: '4px', opacity: 0.7 }}>
-                      ({field.label})
-                    </span>
-                  )}
+                  {variable.name}
                 </Button>
               ))}
             </InlineStack>
-            {fields.length > formulaFields.length && (
+            <Text as="p" variant="bodySm" tone="subdued">
+              <strong>base_price</strong>: Termék alap ára (Shopify-ból) • <strong>quantity</strong>: Rendelt mennyiség
+            </Text>
+          </BlockStack>
+
+          <Divider />
+
+          {/* User-defined Fields */}
+          <BlockStack gap="200">
+            <Text as="p" variant="bodySm" fontWeight="semibold">
+              Saját mezők:
+            </Text>
+            {formulaFields.length > 0 ? (
+              <>
+                <InlineStack gap="200" wrap>
+                  {formulaFields.map((field) => (
+                    <Button
+                      key={field.key}
+                      size="slim"
+                      onClick={() => handleFieldClick(field.key)}
+                      tone="success"
+                    >
+                      {field.key}
+                      {field.label && field.label !== field.key && (
+                        <span style={{ marginLeft: '4px', opacity: 0.7 }}>
+                          ({field.label})
+                        </span>
+                      )}
+                    </Button>
+                  ))}
+                </InlineStack>
+                {fields.length > formulaFields.length && (
+                  <Text as="p" variant="bodySm" tone="subdued">
+                    {fields.length - formulaFields.length} nem-számszerű mező nem használható a képletben
+                  </Text>
+                )}
+              </>
+            ) : (
               <Text as="p" variant="bodySm" tone="subdued">
-                {fields.length - formulaFields.length} nem-számszerű mező nem használható a képletben
+                {fields.length === 0
+                  ? 'Adj hozzá NUMBER típusú mezőket a "Mezők konfigurációja" szekcióban.'
+                  : 'Nincs NUMBER típusú mező a képlethez.'}
               </Text>
             )}
           </BlockStack>
-        </Card>
-      ) : (
-        <Banner tone="warning">
-          <p>
-            {fields.length === 0
-              ? 'Először adj hozzá NUMBER típusú mezőket a "Mezők konfigurációja" szekcióban.'
-              : 'Nincs NUMBER típusú mező. Adj hozzá legalább egy NUMBER típusú mezőt a képlet használatához.'}
-          </p>
-        </Banner>
-      )}
+        </BlockStack>
+      </Card>
 
       {/* Operators */}
       <Card>
@@ -180,17 +211,25 @@ export const FormulaBuilder: React.FC<FormulaBuilderProps> = ({
       <Banner tone="info">
         <BlockStack gap="200">
           <Text as="p" fontWeight="semibold">
-            Példa képlet:
+            Példa képletek:
           </Text>
           <Text as="p" fontWeight="regular">
-            <code>
-              (width_cm * height_cm / 10000) * unit_m2_price + floor(width_cm / 25) *
-              grommet_fee
-            </code>
+            <code>base_price + szelesseg * 100</code>
           </Text>
           <Text as="p" variant="bodySm" tone="subdued">
-            Ez kiszámítja a területet négyzetméterben, megszorozza az egységárral, majd
-            hozzáadja a rigli díjat (25 cm-enként).
+            Alap ár + szélesség alapú felár
+          </Text>
+          <Text as="p" fontWeight="regular">
+            <code>base_price * 1.5</code>
+          </Text>
+          <Text as="p" variant="bodySm" tone="subdued">
+            Alap ár 50%-kal növelve
+          </Text>
+          <Text as="p" fontWeight="regular">
+            <code>base_price * quantity</code>
+          </Text>
+          <Text as="p" variant="bodySm" tone="subdued">
+            Alap ár szorozva a mennyiséggel
           </Text>
         </BlockStack>
       </Banner>

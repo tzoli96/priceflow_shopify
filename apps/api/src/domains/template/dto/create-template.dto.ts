@@ -71,7 +71,7 @@ export class CreateTemplateFieldDto {
   validation?: any;
 
   @IsOptional()
-  options?: any;
+  options?: any; // FieldOption[] - tartalmazza imageUrl, description, features mezőket is
 
   @IsOptional()
   conditionalRules?: any;
@@ -82,6 +82,13 @@ export class CreateTemplateFieldDto {
 
   @IsOptional()
   order?: number = 0;
+
+  @IsString()
+  @IsOptional()
+  displayStyle?: string; // 'default' | 'card' | 'chip'
+
+  @IsOptional()
+  presetValues?: any; // PresetValue[] - előre definiált értékek
 }
 
 /**
@@ -209,4 +216,19 @@ export class CreateTemplateDto {
   @IsOptional()
   @MaxLength(255)
   normalLabel?: string;
+
+  // Megjegyzés mező
+  @IsBoolean()
+  @IsOptional()
+  hasNotesField?: boolean;
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(255)
+  notesFieldLabel?: string;
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(500)
+  notesFieldPlaceholder?: string;
 }

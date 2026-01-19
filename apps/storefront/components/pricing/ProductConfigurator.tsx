@@ -20,6 +20,7 @@ import { PriceDisplay } from './PriceDisplay';
 import { ExpressSelector } from './ExpressSelector';
 import { DiscountTierDisplay } from './DiscountTierDisplay';
 import { QuantityInput } from './QuantityInput';
+import { ConfigSummary } from './ConfigSummary';
 
 interface ProductConfiguratorProps {
   productId: string;
@@ -69,6 +70,7 @@ export function ProductConfigurator({
   const [fieldValues, setFieldValues] = useState<Record<string, any>>({});
   const [quantity, setQuantity] = useState(1);
   const [isExpress, setIsExpress] = useState(false);
+  const [notes, setNotes] = useState('');
 
   // Price calculation state
   const [priceResult, setPriceResult] = useState<PriceCalculationResult | null>(
@@ -150,6 +152,7 @@ export function ProductConfigurator({
       setCalculating(true);
       const result = await api.pricing.calculatePrice({
         templateId: templateInfo.template.id,
+        productId,
         fieldValues: numericValues,
         quantity,
         basePrice,
@@ -161,7 +164,7 @@ export function ProductConfigurator({
     } finally {
       setCalculating(false);
     }
-  }, [templateInfo, fieldValues, quantity, basePrice, isExpress]);
+  }, [templateInfo, fieldValues, quantity, basePrice, isExpress, productId]);
 
   // Debounced price calculation
   useEffect(() => {
@@ -236,6 +239,11 @@ export function ProductConfigurator({
       properties['Kedvezmény'] = `-${priceResult.discountPercent}%`;
     }
 
+    // Add notes if provided
+    if (notes && template.hasNotesField) {
+      properties[template.notesFieldLabel || 'Megjegyzés'] = notes;
+    }
+
     onAddToCart?.({
       variantId,
       productTitle,
@@ -295,71 +303,124 @@ export function ProductConfigurator({
 
   return (
     <div className={`priceflow-configurator ${className}`}>
-      {/* Template name */}
-      {template.description && (
-        <div className="priceflow-description">{template.description}</div>
-      )}
+      <div className="priceflow-layout flex flex-col lg:flex-row gap-6">
+        {/* Left side - Form */}
+        <div className="priceflow-form-section flex-1 lg:max-w-2xl">
+          {/* Template description */}
+          {template.description && (
+            <div className="priceflow-description mb-6 p-4 bg-pink-50 border border-pink-100 rounded-lg text-gray-700">
+              {template.description}
+            </div>
+          )}
 
-      {/* Form fields */}
-      <div className="priceflow-fields">
-        {template.fields
-          .sort((a, b) => a.order - b.order)
-          .map((field) => (
-            <ConfiguratorField
-              key={field.key}
-              field={field}
-              value={fieldValues[field.key]}
-              onChange={(value) => handleFieldChange(field.key, value)}
+          {/* Form fields */}
+          <div className="priceflow-fields space-y-6">
+            {template.fields
+              .sort((a, b) => a.order - b.order)
+              .map((field) => (
+                <ConfiguratorField
+                  key={field.key}
+                  field={field}
+                  value={fieldValues[field.key]}
+                  onChange={(value) => handleFieldChange(field.key, value)}
+                />
+              ))}
+          </div>
+
+          {/* Quantity input */}
+          <div className="mt-6">
+            <QuantityInput
+              value={quantity}
+              onChange={setQuantity}
+              min={template.quantityLimits?.minQuantity || 1}
+              max={template.quantityLimits?.maxQuantity}
+              error={quantityError}
             />
-          ))}
+          </div>
+
+          {/* Discount tiers display */}
+          {template.discountTiers && template.discountTiers.length > 0 && (
+            <div className="mt-6">
+              <DiscountTierDisplay
+                tiers={template.discountTiers}
+                currentQuantity={quantity}
+              />
+            </div>
+          )}
+
+          {/* Express option selector */}
+          {template.hasExpressOption && (
+            <div className="mt-6">
+              <ExpressSelector
+                isExpress={isExpress}
+                onChange={setIsExpress}
+                normalLabel={template.normalLabel || 'Normál gyártás (7-10 munkanap)'}
+                expressLabel={template.expressLabel || 'Expressz gyártás (3 munkanap)'}
+                normalPrice={priceResult?.normalPrice}
+                expressPrice={priceResult?.expressPrice}
+                expressMultiplier={template.expressMultiplier}
+              />
+            </div>
+          )}
+
+          {/* Notes field */}
+          {template.hasNotesField && (
+            <div className="mt-6">
+              <label className="priceflow-label block text-sm font-medium text-gray-700 mb-2">
+                {template.notesFieldLabel || 'Megjegyzés'}
+              </label>
+              <textarea
+                className="priceflow-input priceflow-textarea w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                placeholder={template.notesFieldPlaceholder || 'Írja ide megjegyzését...'}
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                rows={3}
+              />
+            </div>
+          )}
+
+          {/* Mobile price display (hidden on desktop) */}
+          <div className="lg:hidden mt-6">
+            <PriceDisplay
+              result={priceResult}
+              calculating={calculating}
+              currency="HUF"
+            />
+
+            {/* Mobile Add to cart button */}
+            <button
+              type="button"
+              className="priceflow-add-to-cart w-full mt-4 py-3 px-6 bg-pink-500 hover:bg-pink-600 disabled:bg-gray-300 text-white font-semibold rounded-lg transition-colors"
+              onClick={handleAddToCart}
+              disabled={!isFormValid() || calculating || !priceResult}
+            >
+              Kosárba
+            </button>
+          </div>
+        </div>
+
+        {/* Right side - Summary sidebar (hidden on mobile) */}
+        <div className="hidden lg:block lg:w-80 xl:w-96">
+          <ConfigSummary
+            productTitle={productTitle}
+            productImage={productImage}
+            fields={template.fields}
+            fieldValues={fieldValues}
+            quantity={quantity}
+            isExpress={isExpress}
+            expressLabel={template.expressLabel}
+            normalLabel={template.normalLabel}
+            priceResult={priceResult}
+            calculating={calculating}
+            discountPercent={priceResult?.discountPercent}
+            hasNotesField={template.hasNotesField}
+            notesFieldLabel={template.notesFieldLabel}
+            notes={notes}
+            onAddToCart={handleAddToCart}
+            isFormValid={isFormValid()}
+          />
+        </div>
       </div>
-
-      {/* Quantity input */}
-      <QuantityInput
-        value={quantity}
-        onChange={setQuantity}
-        min={template.quantityLimits?.minQuantity || 1}
-        max={template.quantityLimits?.maxQuantity}
-        error={quantityError}
-      />
-
-      {/* Discount tiers display */}
-      {template.discountTiers && template.discountTiers.length > 0 && (
-        <DiscountTierDisplay
-          tiers={template.discountTiers}
-          currentQuantity={quantity}
-        />
-      )}
-
-      {/* Express option selector */}
-      {template.hasExpressOption && (
-        <ExpressSelector
-          isExpress={isExpress}
-          onChange={setIsExpress}
-          normalLabel={template.normalLabel || 'Normál gyártás (7-10 munkanap)'}
-          expressLabel={template.expressLabel || 'Expressz gyártás (3 munkanap)'}
-          normalPrice={priceResult?.normalPrice}
-          expressPrice={priceResult?.expressPrice}
-          expressMultiplier={template.expressMultiplier}
-        />
-      )}
-
-      {/* Price display */}
-      <PriceDisplay
-        result={priceResult}
-        calculating={calculating}
-        currency="HUF"
-      />
-
-      {/* Add to cart button */}
-      <button
-        type="button"
-        className="priceflow-add-to-cart"
-        onClick={handleAddToCart}
-        disabled={!isFormValid() || calculating || !priceResult}
-      >
-        Kosárba
-      </button>
     </div>
   );
 }

@@ -20,6 +20,8 @@ export class TemplateFieldResponseDto {
   conditionalRules: any | null;
   useInFormula: boolean;
   order: number;
+  displayStyle: string | null;
+  presetValues: any | null;
   createdAt: Date;
   updatedAt: Date;
 
@@ -39,6 +41,8 @@ export class TemplateFieldResponseDto {
     dto.conditionalRules = field.conditionalRules;
     dto.useInFormula = field.useInFormula;
     dto.order = field.order;
+    dto.displayStyle = field.displayStyle ?? null;
+    dto.presetValues = field.presetValues ?? null;
     dto.createdAt = field.createdAt;
     dto.updatedAt = field.updatedAt;
     return dto;
@@ -120,6 +124,11 @@ export class TemplateResponseDto {
   expressLabel: string | null;
   normalLabel: string | null;
 
+  // Notes field
+  hasNotesField: boolean;
+  notesFieldLabel: string | null;
+  notesFieldPlaceholder: string | null;
+
   /**
    * Domain model-ből DTO létrehozása
    */
@@ -154,6 +163,11 @@ export class TemplateResponseDto {
     dto.expressMultiplier = template.expressMultiplier ?? null;
     dto.expressLabel = template.expressLabel ?? null;
     dto.normalLabel = template.normalLabel ?? null;
+
+    // Notes field
+    dto.hasNotesField = template.hasNotesField ?? false;
+    dto.notesFieldLabel = template.notesFieldLabel ?? null;
+    dto.notesFieldPlaceholder = template.notesFieldPlaceholder ?? null;
 
     return dto;
   }

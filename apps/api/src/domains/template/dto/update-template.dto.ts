@@ -114,4 +114,19 @@ export class UpdateTemplateDto {
   @IsOptional()
   @MaxLength(255)
   normalLabel?: string | null;
+
+  // Megjegyzés mező
+  @IsBoolean()
+  @IsOptional()
+  hasNotesField?: boolean;
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(255)
+  notesFieldLabel?: string | null;
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(500)
+  notesFieldPlaceholder?: string | null;
 }

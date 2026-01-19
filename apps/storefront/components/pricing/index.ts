@@ -11,3 +11,6 @@ export { PriceDisplay } from './PriceDisplay';
 export { ExpressSelector } from './ExpressSelector';
 export { DiscountTierDisplay } from './DiscountTierDisplay';
 export { QuantityInput } from './QuantityInput';
+export { CardSelector } from './CardSelector';
+export { PresetChips } from './PresetChips';
+export { ConfigSummary } from './ConfigSummary';

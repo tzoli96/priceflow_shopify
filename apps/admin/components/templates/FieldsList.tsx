@@ -16,7 +16,7 @@ import {
   EmptyState,
 } from '@shopify/polaris';
 import { FieldEditor } from './FieldEditor';
-import type { TemplateField, FieldType } from '@/types/template';
+import type { TemplateField, FieldType, FieldDisplayStyle } from '@/types/template';
 
 interface FieldsListProps {
   fields: TemplateField[];
@@ -46,6 +46,17 @@ export const FieldsList: React.FC<FieldsListProps> = ({ fields, onChange }) => {
         return 'Fájl';
       default:
         return type;
+    }
+  };
+
+  const getDisplayStyleLabel = (style?: FieldDisplayStyle): string | null => {
+    switch (style) {
+      case 'card':
+        return 'Kártyás';
+      case 'chip':
+        return 'Chip';
+      default:
+        return null;
     }
   };
 
@@ -125,36 +136,54 @@ export const FieldsList: React.FC<FieldsListProps> = ({ fields, onChange }) => {
       <ResourceList
         resourceName={{ singular: 'mező', plural: 'mezők' }}
         items={fields}
-        renderItem={(field, _, index) => (
-          <ResourceItem id={field.key}>
-            <InlineStack align="space-between">
-              <InlineStack gap="300">
-                <Text variant="bodyMd" fontWeight="medium">
-                  {field.label}
-                </Text>
-                <Badge tone="info">{getFieldTypeLabel(field.type)}</Badge>
-                <Badge>{field.key}</Badge>
-                {field.required && <Badge tone="attention">Kötelező</Badge>}
-                {field.useInFormula !== false && field.type === 'NUMBER' && (
-                  <Badge tone="success">Képletben</Badge>
-                )}
-                {field.useInFormula === false && (
-                  <Badge>Nincs árhatás</Badge>
-                )}
-                {field.helpText && <Badge tone="info">Segítség</Badge>}
-              </InlineStack>
+        renderItem={(field, _, index) => {
+          const displayStyleLabel = getDisplayStyleLabel(field.displayStyle);
+          const hasPresets = field.presetValues && field.presetValues.length > 0;
+          const hasOptions = field.options && field.options.length > 0;
 
-              <InlineStack gap="200">
-                <Button size="slim" onClick={() => handleEdit(field, index)}>
-                  Szerkeszt
-                </Button>
-                <Button size="slim" tone="critical" onClick={() => handleDelete(index)}>
-                  Törlés
-                </Button>
+          return (
+            <ResourceItem id={field.key}>
+              <InlineStack align="space-between">
+                <InlineStack gap="300" wrap={false}>
+                  <Text variant="bodyMd" fontWeight="medium">
+                    {field.label}
+                  </Text>
+                  <Badge tone="info">{getFieldTypeLabel(field.type)}</Badge>
+                  <Badge>{field.key}</Badge>
+                  {field.required && <Badge tone="attention">Kötelező</Badge>}
+                  {field.useInFormula !== false && field.type === 'NUMBER' && (
+                    <Badge tone="success">Képletben</Badge>
+                  )}
+                  {field.useInFormula === false && (
+                    <Badge>Nincs árhatás</Badge>
+                  )}
+                  {/* Display style badge for SELECT/RADIO */}
+                  {displayStyleLabel && (
+                    <Badge tone="warning">{displayStyleLabel}</Badge>
+                  )}
+                  {/* Options count for SELECT/RADIO */}
+                  {hasOptions && (
+                    <Badge>{field.options!.length} opció</Badge>
+                  )}
+                  {/* Preset values for NUMBER */}
+                  {hasPresets && (
+                    <Badge tone="success">{field.presetValues!.length} gyors érték</Badge>
+                  )}
+                  {field.helpText && <Badge tone="info">Segítség</Badge>}
+                </InlineStack>
+
+                <InlineStack gap="200">
+                  <Button size="slim" onClick={() => handleEdit(field, index)}>
+                    Szerkeszt
+                  </Button>
+                  <Button size="slim" tone="critical" onClick={() => handleDelete(index)}>
+                    Törlés
+                  </Button>
+                </InlineStack>
               </InlineStack>
-            </InlineStack>
-          </ResourceItem>
-        )}
+            </ResourceItem>
+          );
+        }}
       />
 
       {showEditor && (

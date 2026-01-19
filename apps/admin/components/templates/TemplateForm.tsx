@@ -82,6 +82,11 @@ export function TemplateForm({
     expressMultiplier: template?.expressMultiplier?.toString() || '1.5',
     expressLabel: template?.expressLabel || 'Expressz gyártás (3 munkanap)',
     normalLabel: template?.normalLabel || 'Normál gyártás (7-10 munkanap)',
+
+    // Megjegyzés mező
+    hasNotesField: template?.hasNotesField || false,
+    notesFieldLabel: template?.notesFieldLabel || 'Megjegyzés',
+    notesFieldPlaceholder: template?.notesFieldPlaceholder || 'Írja ide az egyedi kéréseit...',
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -180,6 +185,11 @@ export function TemplateForm({
           : undefined,
         expressLabel: formData.hasExpressOption ? formData.expressLabel : undefined,
         normalLabel: formData.hasExpressOption ? formData.normalLabel : undefined,
+
+        // Megjegyzés mező
+        hasNotesField: formData.hasNotesField,
+        notesFieldLabel: formData.hasNotesField ? formData.notesFieldLabel : undefined,
+        notesFieldPlaceholder: formData.hasNotesField ? formData.notesFieldPlaceholder : undefined,
       };
 
       await onSubmit(submitData);
@@ -455,6 +465,50 @@ export function TemplateForm({
                   <Banner tone="info">
                     A vásárló a termék oldalon választhat a normál és az expressz gyártás
                     között. Az expressz ár = alapár × {formData.expressMultiplier || '1.5'}
+                  </Banner>
+                </>
+              )}
+            </BlockStack>
+          </FormSection>
+        </Card>
+
+        {/* Notes Field */}
+        <Card>
+          <FormSection
+            title="Megjegyzés mező"
+            description="Opcionális szöveges mező a vásárlói megjegyzésekhez"
+          >
+            <BlockStack gap="400">
+              <Checkbox
+                label="Megjegyzés mező megjelenítése a storefront-on"
+                checked={formData.hasNotesField}
+                onChange={(checked) => handleChange('hasNotesField', checked)}
+              />
+
+              {formData.hasNotesField && (
+                <>
+                  <Divider />
+                  <FormLayout>
+                    <TextField
+                      label="Mező címkéje"
+                      value={formData.notesFieldLabel}
+                      onChange={(value) => handleChange('notesFieldLabel', value)}
+                      placeholder="Megjegyzés"
+                      autoComplete="off"
+                    />
+
+                    <TextField
+                      label="Placeholder szöveg"
+                      value={formData.notesFieldPlaceholder}
+                      onChange={(value) => handleChange('notesFieldPlaceholder', value)}
+                      placeholder="Írja ide az egyedi kéréseit..."
+                      autoComplete="off"
+                    />
+                  </FormLayout>
+
+                  <Banner tone="info">
+                    A megjegyzés mező a storefront-on jelenik meg, ahol a vásárló egyedi
+                    kéréseket írhat a rendeléséhez.
                   </Banner>
                 </>
               )}

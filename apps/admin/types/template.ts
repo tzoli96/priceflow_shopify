@@ -23,12 +23,31 @@ export enum FieldType {
 }
 
 /**
- * Opció típus SELECT/RADIO mezőkhöz árral
+ * Opció típus SELECT/RADIO mezőkhöz árral és képpel
  */
 export interface FieldOption {
   label: string;
   value: string;
   price?: number; // Felár, ha van
+  imageUrl?: string; // Kép URL (S3 vagy külső)
+  description?: string; // Hosszabb leírás
+  features?: string[]; // Felsorolás pontok (bullet points)
+}
+
+/**
+ * Mező megjelenítési stílus
+ * - default: Alapértelmezett (dropdown/radio)
+ * - card: Kártyás megjelenítés képekkel
+ * - chip: Gyorsgombok (chips)
+ */
+export type FieldDisplayStyle = 'default' | 'card' | 'chip';
+
+/**
+ * Előre definiált érték (gyorsgombok)
+ */
+export interface PresetValue {
+  label: string; // Megjelenítendő szöveg (pl. "100 x 50 cm")
+  value: number | string | Record<string, number>; // Érték vagy összetett érték
 }
 
 /**
@@ -76,6 +95,8 @@ export interface TemplateField {
   };
   useInFormula: boolean; // Képletben használt-e (árhatás)
   order: number; // Megjelenítési sorrend
+  displayStyle?: FieldDisplayStyle; // Megjelenítési stílus (default/card/chip)
+  presetValues?: PresetValue[]; // Előre definiált értékek (gyorsgombok)
 }
 
 /**
@@ -118,6 +139,11 @@ export interface Template {
   expressMultiplier?: number; // pl. 1.5 = +50%
   expressLabel?: string; // "Expressz (3 munkanap)"
   normalLabel?: string; // "Normál (7-10 munkanap)"
+
+  // Megjegyzés mező
+  hasNotesField?: boolean;
+  notesFieldLabel?: string; // "Megjegyzés"
+  notesFieldPlaceholder?: string; // "Írja ide az egyedi kéréseit..."
 }
 
 export interface CreateTemplateDto {
@@ -138,6 +164,11 @@ export interface CreateTemplateDto {
   expressMultiplier?: number;
   expressLabel?: string;
   normalLabel?: string;
+
+  // Megjegyzés mező
+  hasNotesField?: boolean;
+  notesFieldLabel?: string;
+  notesFieldPlaceholder?: string;
 }
 
 export interface UpdateTemplateDto {
@@ -158,6 +189,11 @@ export interface UpdateTemplateDto {
   expressMultiplier?: number | null;
   expressLabel?: string | null;
   normalLabel?: string | null;
+
+  // Megjegyzés mező
+  hasNotesField?: boolean;
+  notesFieldLabel?: string | null;
+  notesFieldPlaceholder?: string | null;
 }
 
 export interface TemplateListResponse {
