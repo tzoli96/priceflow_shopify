@@ -6,6 +6,9 @@ import { ShopId } from '../../common/interceptors/shop-header.interceptor';
 import { SHOP_REPOSITORY } from '../../shop/repositories/shop.repository.interface';
 import type { IShopRepository } from '../../shop/repositories/shop.repository.interface';
 import { ShopifyService } from '../../auth/services/shopify.service';
+import axios from 'axios';
+
+const API_VERSION = '2026-01';
 
 /**
  * Shopify Controller
@@ -116,17 +119,21 @@ export class ShopifyController {
   ): Promise<ProductResponseDto> {
     const accessToken = await this.getAccessToken(shopDomain);
 
-    const client = this.shopifyService.getRestClient(shopDomain, accessToken);
-
     // Extract numeric ID from GID if needed
     const numericId = this.extractNumericId(id);
 
     try {
-      const response = await client.get({
-        path: `products/${numericId}`,
+      const url = `https://${shopDomain}/admin/api/${API_VERSION}/products/${numericId}.json`;
+      const response = await axios.get(url, {
+        headers: {
+          'X-Shopify-Access-Token': accessToken,
+          'Content-Type': 'application/json',
+        },
+        timeout: 30000,
+        family: 4, // Force IPv4
       });
 
-      const product = response.body.product;
+      const product = response.data.product;
 
       return {
         id: product.id.toString(),

@@ -112,6 +112,23 @@ export class TemplateService {
       fieldModels,
     );
 
+    // Set additional pricing options
+    if (dto.minQuantity !== undefined) template.minQuantity = dto.minQuantity;
+    if (dto.maxQuantity !== undefined) template.maxQuantity = dto.maxQuantity;
+    if (dto.minQuantityMessage !== undefined) template.minQuantityMessage = dto.minQuantityMessage;
+    if (dto.maxQuantityMessage !== undefined) template.maxQuantityMessage = dto.maxQuantityMessage;
+    if (dto.discountTiers !== undefined) {
+      template.discountTiers = dto.discountTiers.map((tier) => ({
+        minQty: tier.minQty,
+        maxQty: tier.maxQty ?? null,
+        discount: tier.discount,
+      }));
+    }
+    if (dto.hasExpressOption !== undefined) template.hasExpressOption = dto.hasExpressOption;
+    if (dto.expressMultiplier !== undefined) template.expressMultiplier = dto.expressMultiplier;
+    if (dto.expressLabel !== undefined) template.expressLabel = dto.expressLabel;
+    if (dto.normalLabel !== undefined) template.normalLabel = dto.normalLabel;
+
     // Save
     return this.templateRepository.save(template);
   }
@@ -209,6 +226,25 @@ export class TemplateService {
     if (dto.isActive !== undefined) {
       dto.isActive ? template.activate() : template.deactivate();
     }
+
+    // Update pricing options
+    if (dto.minQuantity !== undefined) template.minQuantity = dto.minQuantity;
+    if (dto.maxQuantity !== undefined) template.maxQuantity = dto.maxQuantity;
+    if (dto.minQuantityMessage !== undefined) template.minQuantityMessage = dto.minQuantityMessage;
+    if (dto.maxQuantityMessage !== undefined) template.maxQuantityMessage = dto.maxQuantityMessage;
+    if (dto.discountTiers !== undefined) {
+      template.discountTiers = dto.discountTiers
+        ? dto.discountTiers.map((tier) => ({
+            minQty: tier.minQty,
+            maxQty: tier.maxQty ?? null,
+            discount: tier.discount,
+          }))
+        : null;
+    }
+    if (dto.hasExpressOption !== undefined) template.hasExpressOption = dto.hasExpressOption;
+    if (dto.expressMultiplier !== undefined) template.expressMultiplier = dto.expressMultiplier;
+    if (dto.expressLabel !== undefined) template.expressLabel = dto.expressLabel;
+    if (dto.normalLabel !== undefined) template.normalLabel = dto.normalLabel;
 
     return this.templateRepository.update(template);
   }

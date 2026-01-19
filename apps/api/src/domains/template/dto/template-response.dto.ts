@@ -82,6 +82,15 @@ export class TemplateFieldResponseDto {
  * }
  * ```
  */
+/**
+ * Discount tier response DTO
+ */
+export interface DiscountTierResponseDto {
+  minQty: number;
+  maxQty: number | null;
+  discount: number;
+}
+
 export class TemplateResponseDto {
   id: string;
   shopId: string;
@@ -95,6 +104,21 @@ export class TemplateResponseDto {
   fields: TemplateFieldResponseDto[];
   createdAt: Date;
   updatedAt: Date;
+
+  // Quantity limits
+  minQuantity: number | null;
+  maxQuantity: number | null;
+  minQuantityMessage: string | null;
+  maxQuantityMessage: string | null;
+
+  // Discount tiers
+  discountTiers: DiscountTierResponseDto[] | null;
+
+  // Express option
+  hasExpressOption: boolean;
+  expressMultiplier: number | null;
+  expressLabel: string | null;
+  normalLabel: string | null;
 
   /**
    * Domain model-ből DTO létrehozása
@@ -115,6 +139,22 @@ export class TemplateResponseDto {
       : [];
     dto.createdAt = template.createdAt;
     dto.updatedAt = template.updatedAt;
+
+    // Quantity limits
+    dto.minQuantity = template.minQuantity ?? null;
+    dto.maxQuantity = template.maxQuantity ?? null;
+    dto.minQuantityMessage = template.minQuantityMessage ?? null;
+    dto.maxQuantityMessage = template.maxQuantityMessage ?? null;
+
+    // Discount tiers
+    dto.discountTiers = template.discountTiers ?? null;
+
+    // Express option
+    dto.hasExpressOption = template.hasExpressOption ?? false;
+    dto.expressMultiplier = template.expressMultiplier ?? null;
+    dto.expressLabel = template.expressLabel ?? null;
+    dto.normalLabel = template.normalLabel ?? null;
+
     return dto;
   }
 

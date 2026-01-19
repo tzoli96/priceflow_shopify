@@ -1,24 +1,53 @@
 {% comment %}
   PriceFlow Widget - Theme App Extension Block
-  This embeds the storefront app with hot reload support
+
+  Embeds the storefront configurator for template-based pricing.
+  The widget communicates with the parent page via postMessage.
 {% endcomment %}
+
+{% assign widget_url = block.settings.widget_url | default: "https://app.teszt.uk" %}
+{% assign variant_id = product.selected_or_first_available_variant.id %}
 
 <div
   id="priceflow-widget-{{ block.id }}"
   class="priceflow-widget"
   data-product-id="{{ product.id }}"
+  data-variant-id="{{ variant_id }}"
   data-product-handle="{{ product.handle }}"
   data-shop="{{ shop.permanent_domain }}"
 >
   <iframe
-    src="https://app.teszt.uk/storefront?productId={{ product.id }}&shop={{ shop.permanent_domain }}&handle={{ product.handle }}"
+    id="priceflow-iframe-{{ block.id }}"
+    src="{{ widget_url }}?productId={{ product.id }}&shop={{ shop.permanent_domain }}&handle={{ product.handle }}&variant={{ variant_id }}"
     width="100%"
-    height="400"
+    height="{{ block.settings.widget_height | default: 500 }}"
     frameborder="0"
-    style="border: 2px solid #667eea; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);"
-    title="PriceFlow Widget"
+    style="border: none; border-radius: 8px;"
+    title="PriceFlow Konfigurátor"
+    loading="lazy"
   ></iframe>
 </div>
+
+<script>
+  // Listen for messages from PriceFlow widget
+  window.addEventListener('message', function(event) {
+    // Verify origin in production
+    var data = event.data;
+
+    if (data.type === 'PRICEFLOW_ADD_TO_CART') {
+      // Handle add to cart
+      console.log('[PriceFlow] Add to cart:', data.payload);
+      // You can integrate with your theme's cart here
+    }
+
+    if (data.type === 'PRICEFLOW_CHECKOUT') {
+      // Redirect to checkout
+      if (data.payload && data.payload.invoiceUrl) {
+        window.location.href = data.payload.invoiceUrl;
+      }
+    }
+  });
+</script>
 
 <style>
   .priceflow-widget {
@@ -28,25 +57,31 @@
   .priceflow-widget iframe {
     display: block;
     max-width: 100%;
+    min-height: 300px;
   }
 </style>
 
 {% schema %}
 {
-  "name": "PriceFlow Widget",
+  "name": "PriceFlow Konfigurátor",
   "target": "section",
   "settings": [
     {
       "type": "text",
-      "id": "title",
-      "label": "Widget Title",
-      "default": "Compare Prices"
+      "id": "widget_url",
+      "label": "Widget URL",
+      "default": "https://app.teszt.uk",
+      "info": "A PriceFlow storefront app URL-je"
     },
     {
-      "type": "checkbox",
-      "id": "show_competitors",
-      "label": "Show Competitor Prices",
-      "default": true
+      "type": "range",
+      "id": "widget_height",
+      "min": 300,
+      "max": 800,
+      "step": 50,
+      "unit": "px",
+      "label": "Widget magasság",
+      "default": 500
     }
   ]
 }

@@ -74,6 +74,21 @@ model Template {
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
 
+  // Min/Max rendelési mennyiség
+  minQuantity         Int?
+  maxQuantity         Int?
+  minQuantityMessage  String?
+  maxQuantityMessage  String?
+
+  // Sávos kedvezmények (JSON: [{minQty, maxQty, discount}])
+  discountTiers       Json?
+
+  // Expressz gyártás opció
+  hasExpressOption    Boolean   @default(false)
+  expressMultiplier   Decimal?  @db.Decimal(4, 2)  // pl. 1.50
+  expressLabel        String?   // "Expressz (3 munkanap)"
+  normalLabel         String?   // "Normál (7-10 munkanap)"
+
   fields          TemplateField[]
   assignments     Assignment[]
   calculations    Calculation[]

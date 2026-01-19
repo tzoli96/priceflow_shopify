@@ -2,6 +2,15 @@ import { ScopeType } from '@prisma/client';
 import { TemplateFieldModel } from './template-field.model';
 
 /**
+ * Sávos kedvezmény típus
+ */
+export interface DiscountTier {
+  minQty: number;
+  maxQty: number | null;
+  discount: number;
+}
+
+/**
  * Template Domain Model
  *
  * Felelősség: Template üzleti szabályok és validációk
@@ -12,6 +21,9 @@ import { TemplateFieldModel } from './template-field.model';
  * - Field-ek kezelése
  * - Template aktiválás/deaktiválás
  * - Scope management
+ * - Min/Max mennyiség kezelés
+ * - Sávos kedvezmények
+ * - Expressz gyártás opció
  *
  * Prisma entitásra történő konverzió (toPersistence/fromPersistence pattern)
  */
@@ -29,6 +41,16 @@ export class TemplateModel {
     public readonly createdAt: Date,
     public readonly updatedAt: Date,
     public fields: TemplateFieldModel[] = [],
+    // Új mezők
+    public minQuantity: number | null = null,
+    public maxQuantity: number | null = null,
+    public minQuantityMessage: string | null = null,
+    public maxQuantityMessage: string | null = null,
+    public discountTiers: DiscountTier[] | null = null,
+    public hasExpressOption: boolean = false,
+    public expressMultiplier: number | null = null,
+    public expressLabel: string | null = null,
+    public normalLabel: string | null = null,
   ) {}
 
   /**
@@ -112,6 +134,18 @@ export class TemplateModel {
       prismaTemplate.createdAt,
       prismaTemplate.updatedAt,
       fields,
+      // Új mezők
+      prismaTemplate.minQuantity,
+      prismaTemplate.maxQuantity,
+      prismaTemplate.minQuantityMessage,
+      prismaTemplate.maxQuantityMessage,
+      prismaTemplate.discountTiers as DiscountTier[] | null,
+      prismaTemplate.hasExpressOption ?? false,
+      prismaTemplate.expressMultiplier
+        ? Number(prismaTemplate.expressMultiplier)
+        : null,
+      prismaTemplate.expressLabel,
+      prismaTemplate.normalLabel,
     );
   }
 
@@ -133,6 +167,16 @@ export class TemplateModel {
       isActive: this.isActive,
       createdAt: this.createdAt,
       updatedAt: this.updatedAt,
+      // Új mezők
+      minQuantity: this.minQuantity,
+      maxQuantity: this.maxQuantity,
+      minQuantityMessage: this.minQuantityMessage,
+      maxQuantityMessage: this.maxQuantityMessage,
+      discountTiers: this.discountTiers,
+      hasExpressOption: this.hasExpressOption,
+      expressMultiplier: this.expressMultiplier,
+      expressLabel: this.expressLabel,
+      normalLabel: this.normalLabel,
     };
   }
 

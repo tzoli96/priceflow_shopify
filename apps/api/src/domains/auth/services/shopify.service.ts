@@ -6,6 +6,10 @@ import { PrismaService } from '../../common/database/prisma.service';
 import { DatabaseSessionStorage } from './database-session-storage';
 import * as crypto from 'crypto';
 import axios from 'axios';
+import * as dns from 'dns';
+
+// Force IPv4 DNS resolution order to avoid IPv6 issues in Docker
+dns.setDefaultResultOrder('ipv4first');
 
 /**
  * Shopify Service

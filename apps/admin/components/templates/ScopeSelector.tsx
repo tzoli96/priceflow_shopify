@@ -4,19 +4,20 @@
 
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   BlockStack,
   Select,
   Text,
-  Autocomplete,
-  Icon,
+  TextField,
+  OptionList,
   Tag,
   InlineStack,
   Banner,
   Pagination,
+  Scrollable,
+  Box,
 } from '@shopify/polaris';
-import { SearchIcon } from '@shopify/polaris-icons';
 import type { ScopeType } from '@/types/template';
 import { api } from '@/lib/api';
 
@@ -142,21 +143,20 @@ export function ScopeSelector({
     onChange(scopeType, newSelected);
   };
 
-  const filteredOptions = options.filter((option) =>
-    option.label.toLowerCase().includes(inputValue.toLowerCase())
-  );
+  const filteredOptions = inputValue
+    ? options.filter((option) =>
+        option.label.toLowerCase().includes(inputValue.toLowerCase())
+      )
+    : options;
 
-  const textField = (
-    <Autocomplete.TextField
-      onChange={setInputValue}
-      label=""
-      value={inputValue}
-      placeholder={`Keresés...`}
-      autoComplete="off"
-      prefix={<Icon source={SearchIcon} />}
-      disabled={disabled || loading}
-    />
-  );
+  const handleSearchChange = useCallback((value: string) => {
+    setInputValue(value);
+  }, []);
+
+  const handleOptionListChange = useCallback((selected: string[]) => {
+    setSelectedOptions(selected);
+    onChange(scopeType, selected);
+  }, [scopeType, onChange]);
 
   return (
     <BlockStack gap="300">
@@ -173,10 +173,6 @@ export function ScopeSelector({
       {/* Scope Values (ha nem GLOBAL) */}
       {scopeType !== 'GLOBAL' && (
         <BlockStack gap="200">
-          <Text as="p" variant="bodyMd" fontWeight="medium">
-            Válassz ki elemeket
-          </Text>
-
           {loading && (
             <Banner tone="info">
               Betöltés...
@@ -191,14 +187,55 @@ export function ScopeSelector({
 
           {!loading && options.length > 0 && (
             <>
-              <Autocomplete
-                allowMultiple
-                options={filteredOptions}
-                selected={selectedOptions}
-                onSelect={handleSelectionChange}
-                textField={textField}
-                loading={loading}
+              {/* Search field */}
+              <TextField
+                label="Keresés"
+                value={inputValue}
+                onChange={handleSearchChange}
+                placeholder="Keresés név alapján..."
+                autoComplete="off"
+                clearButton
+                onClearButtonClick={() => setInputValue('')}
               />
+
+              {/* Selected items */}
+              {selectedOptions.length > 0 && (
+                <BlockStack gap="200">
+                  <Text as="p" variant="bodySm" tone="subdued">
+                    Kiválasztva: {selectedOptions.length}
+                  </Text>
+                  <InlineStack gap="100" wrap>
+                    {selectedOptions.map((value) => {
+                      const option = options.find((opt) => opt.value === value);
+                      return (
+                        <Tag key={value} onRemove={() => removeTag(value)}>
+                          {option?.label || value}
+                        </Tag>
+                      );
+                    })}
+                  </InlineStack>
+                </BlockStack>
+              )}
+
+              {/* Options list */}
+              <Text as="p" variant="bodySm" tone="subdued">
+                {filteredOptions.length} elem ({options.length} összesen)
+              </Text>
+              <Box
+                borderColor="border"
+                borderWidth="025"
+                borderRadius="200"
+                overflow="hidden"
+              >
+                <Scrollable style={{ maxHeight: '300px' }}>
+                  <OptionList
+                    onChange={handleOptionListChange}
+                    options={filteredOptions}
+                    selected={selectedOptions}
+                    allowMultiple
+                  />
+                </Scrollable>
+              </Box>
 
               {/* Pagination for PRODUCT scope */}
               {scopeType === 'PRODUCT' && (hasNextPage || hasPreviousPage) && (
@@ -222,25 +259,6 @@ export function ScopeSelector({
                 </InlineStack>
               )}
             </>
-          )}
-
-          {/* Selected items */}
-          {selectedOptions.length > 0 && (
-            <BlockStack gap="200">
-              <Text as="p" variant="bodySm" tone="subdued">
-                Kiválasztva: {selectedOptions.length}
-              </Text>
-              <InlineStack gap="100" wrap>
-                {selectedOptions.map((value) => {
-                  const option = options.find((opt) => opt.value === value);
-                  return (
-                    <Tag key={value} onRemove={() => removeTag(value)}>
-                      {option?.label || value}
-                    </Tag>
-                  );
-                })}
-              </InlineStack>
-            </BlockStack>
           )}
         </BlockStack>
       )}

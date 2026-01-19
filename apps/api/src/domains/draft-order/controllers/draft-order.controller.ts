@@ -18,6 +18,7 @@ import {
 import { DraftOrderService } from '../services/draft-order.service';
 import { CreateDraftOrderDto } from '../dto/create-draft-order.dto';
 import { AddItemDto } from '../dto/add-item.dto';
+import { CreateFromCartDto } from '../dto/create-from-cart.dto';
 import { ShopId } from '../../common/interceptors/shop-header.interceptor';
 import { SHOP_REPOSITORY } from '../../shop/repositories/shop.repository.interface';
 import type { IShopRepository } from '../../shop/repositories/shop.repository.interface';
@@ -57,6 +58,30 @@ export class DraftOrderController {
     const accessToken = await this.getAccessToken(shopDomain);
 
     return this.draftOrderService.createDraftOrder(
+      shopDomain,
+      accessToken,
+      createDto,
+    );
+  }
+
+  /**
+   * POST /api/draft-orders/create-from-cart
+   *
+   * Create a new Draft Order from localStorage cart items
+   * Payload matches the "custom-cart-items" localStorage structure
+   *
+   * @param shopDomain - Shop domain from X-Shopify-Shop header
+   * @param createDto - Cart items from localStorage
+   * @returns Created Draft Order with invoice URL
+   */
+  @Post('create-from-cart')
+  async createFromCart(
+    @ShopId() shopDomain: string,
+    @Body() createDto: CreateFromCartDto,
+  ) {
+    const accessToken = await this.getAccessToken(shopDomain);
+
+    return this.draftOrderService.createFromCart(
       shopDomain,
       accessToken,
       createDto,

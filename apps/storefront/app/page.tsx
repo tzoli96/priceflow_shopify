@@ -1,7 +1,21 @@
+/**
+ * PriceFlow Storefront Widget Page
+ *
+ * This page is embedded in the Shopify theme via iframe.
+ * It loads the ProductConfigurator for template-based pricing.
+ *
+ * URL params:
+ * - productId: Shopify product ID
+ * - shop: Shop domain
+ * - handle: Product handle (optional)
+ * - variant: Variant ID (optional)
+ */
+
 'use client';
 
 import { useEffect, useState } from 'react';
-import { AddToCartButton } from '@/components/cart/AddToCartButton';
+import { ProductConfigurator, AddToCartData } from '@/components/pricing/ProductConfigurator';
+import '@/styles/priceflow.css';
 
 interface ProductData {
   productId: string;
@@ -9,200 +23,203 @@ interface ProductData {
   title: string;
   variantTitle: string;
   price: string;
-  compareAtPrice?: string;
   sku: string;
   imageUrl: string;
-  availableForSale: boolean;
+  vendor: string;
+  tags: string[];
 }
 
 export default function Home() {
   const [product, setProduct] = useState<ProductData | null>(null);
+  const [shop, setShop] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  // Custom pricing multiplier (can be changed based on template/formula)
-  const priceMultiplier = 2;
 
   useEffect(() => {
     // Get URL parameters
     const params = new URLSearchParams(window.location.search);
     const productId = params.get('productId');
     const variantId = params.get('variant');
-    const shop = params.get('shop');
+    const shopDomain = params.get('shop');
 
-    // If no product ID, show demo product
-    if (!productId || !shop) {
+    // If no product ID, show demo mode
+    if (!productId || !shopDomain) {
       setProduct({
-        productId: '1',
-        variantId: '101',
-        title: 'Premium Wireless Headphones',
-        variantTitle: 'Black / Large',
-        price: '99.99',
-        compareAtPrice: '129.99',
-        sku: 'WH-001-BLK-L',
-        imageUrl: 'https://via.placeholder.com/400x400?text=Product',
-        availableForSale: true,
+        productId: 'demo-1',
+        variantId: 'demo-101',
+        title: 'Demo Termék',
+        variantTitle: '',
+        price: '10000',
+        sku: 'DEMO-001',
+        imageUrl: 'https://via.placeholder.com/400x400?text=Demo',
+        vendor: 'Demo',
+        tags: [],
       });
+      setShop('demo.myshopify.com');
       setLoading(false);
       return;
     }
 
-    // Fetch real product data from Shopify
-    fetchProductData(productId, variantId, shop);
+    setShop(shopDomain);
+    fetchProductData(productId, variantId, shopDomain);
   }, []);
 
-  const fetchProductData = async (productId: string, variantId: string | null, shop: string) => {
+  const fetchProductData = async (
+    productId: string,
+    variantId: string | null,
+    shopDomain: string
+  ) => {
     try {
       // Fetch product details from backend API
       const response = await fetch(`/api/shopify/products/${productId}`, {
         headers: {
-          'X-Shopify-Shop': shop,
+          'X-Shopify-Shop': shopDomain,
           'Content-Type': 'application/json',
         },
       });
 
       if (!response.ok) {
-        throw new Error(`Failed to fetch product: ${response.statusText}`);
+        throw new Error('Termék nem található');
       }
 
       const productData = await response.json();
 
       // Find the selected variant or use the first one
       const selectedVariant = variantId
-        ? productData.variants.find((v: any) => v.id === variantId)
-        : productData.variants[0];
+        ? productData.variants?.find((v: any) => v.id === variantId)
+        : productData.variants?.[0];
 
       if (!selectedVariant) {
-        throw new Error('Variant not found');
+        throw new Error('Variáns nem található');
       }
 
       // Find product image
-      const productImage = productData.images?.[0]?.src || 'https://via.placeholder.com/400x400?text=Product';
+      const productImage =
+        productData.images?.[0]?.src ||
+        'https://via.placeholder.com/400x400?text=Product';
 
       // Map to ProductData
       setProduct({
         productId: productData.id,
         variantId: selectedVariant.id,
         title: productData.title,
-        variantTitle: selectedVariant.title !== 'Default Title' ? selectedVariant.title : '',
+        variantTitle:
+          selectedVariant.title !== 'Default Title' ? selectedVariant.title : '',
         price: selectedVariant.price,
-        sku: selectedVariant.sku,
+        sku: selectedVariant.sku || '',
         imageUrl: productImage,
-        availableForSale: selectedVariant.inventoryQuantity > 0 || productData.status === 'active',
+        vendor: productData.vendor || '',
+        tags: productData.tags || [],
       });
 
       setLoading(false);
-    } catch (err) {
-      setError('Failed to load product');
+    } catch (err: any) {
+      console.error('Product fetch error:', err);
+      setError(err.message || 'Hiba a termék betöltésekor');
       setLoading(false);
+    }
+  };
+
+  // Handle add to cart from configurator
+  const handleAddToCart = async (data: AddToCartData) => {
+    try {
+      // Send message to parent window (Shopify theme)
+      window.parent.postMessage(
+        {
+          type: 'PRICEFLOW_ADD_TO_CART',
+          payload: {
+            variantId: data.variantId,
+            quantity: data.quantity,
+            price: data.finalPrice,
+            linePrice: data.finalLinePrice,
+            properties: data.properties,
+            productTitle: data.productTitle,
+            productImage: data.productImage,
+          },
+        },
+        '*'
+      );
+
+      // Create draft order via API for custom pricing
+      const response = await fetch('/api/draft-orders/from-cart', {
+        method: 'POST',
+        headers: {
+          'X-Shopify-Shop': shop,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          items: [
+            {
+              variantId: data.variantId,
+              quantity: data.quantity,
+              customPrice: data.finalPrice,
+              customTitle: data.productTitle,
+              properties: data.properties,
+            },
+          ],
+        }),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        // Notify parent about checkout URL
+        if (result.invoiceUrl) {
+          window.parent.postMessage(
+            {
+              type: 'PRICEFLOW_CHECKOUT',
+              payload: { invoiceUrl: result.invoiceUrl },
+            },
+            '*'
+          );
+        }
+      }
+    } catch (err) {
+      console.error('Add to cart error:', err);
     }
   };
 
   if (loading) {
     return (
-      <div style={{
-        minHeight: '100vh',
-        background: 'linear-gradient(to bottom right, #9333ea, #7e22ce, #4338ca)',
-        padding: '24px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        color: 'white',
-        fontSize: '18px'
-      }}>
-        Loading product...
-      </div>
-    );
-  }
-
-  if (error || !product) {
-    return (
-      <div style={{
-        minHeight: '100vh',
-        background: 'linear-gradient(to bottom right, #9333ea, #7e22ce, #4338ca)',
-        padding: '24px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        color: 'white',
-        fontSize: '18px'
-      }}>
-        {error || 'Product not found'}
-      </div>
-    );
-  }
-
-  // Calculate custom price (2x multiplier)
-  const basePrice = parseFloat(product.price);
-  const customPrice = basePrice * priceMultiplier;
-
-  return (
-    <div style={{
-      minHeight: '100vh',
-      background: 'linear-gradient(to bottom right, #9333ea, #7e22ce, #4338ca)',
-      padding: '24px',
-      fontFamily: 'Arial, sans-serif'
-    }}>
-      <div style={{
-        maxWidth: '512px',
-        margin: '0 auto'
-      }}>
-        <div style={{
-          backgroundColor: 'white',
-          borderRadius: '8px',
-          boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
-          overflow: 'hidden'
-        }}>
-          <div style={{ padding: '24px' }}>
-            <h1 style={{
-              fontSize: '24px',
-              fontWeight: 'bold',
-              color: '#111827',
-              marginBottom: '8px'
-            }}>
-              {product.title}
-            </h1>
-
-            {product.variantTitle && (
-              <p style={{
-                fontSize: '14px',
-                color: '#4b5563',
-                marginBottom: '16px'
-              }}>
-                {product.variantTitle}
-              </p>
-            )}
-
-            <div style={{ marginBottom: '24px' }}>
-              <p style={{
-                fontSize: '30px',
-                fontWeight: 'bold',
-                color: '#111827',
-                margin: 0
-              }}>
-                ${customPrice.toFixed(2)}
-              </p>
-            </div>
-
-            {/* Add to Cart Button */}
-            <AddToCartButton
-              variantId={product.variantId}
-              productTitle={product.title}
-              image={product.imageUrl}
-              finalPrice={customPrice}
-              quantity={1}
-              properties={{
-                variant: product.variantTitle,
-                sku: product.sku,
-                pricing_template: 'Custom 2x Multiplier',
-                original_price: basePrice.toFixed(2),
-                multiplier: priceMultiplier.toString(),
-              }}
-              buttonText="Add to Cart"
-            />
-          </div>
+      <div className="priceflow-widget-container priceflow-widget-loading">
+        <div className="priceflow-loading">
+          <div className="priceflow-spinner" />
+          <span>Konfigurátor betöltése...</span>
         </div>
       </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="priceflow-widget-container">
+        <div className="priceflow-error">{error}</div>
+      </div>
+    );
+  }
+
+  if (!product) {
+    return (
+      <div className="priceflow-widget-container">
+        <div className="priceflow-error">Termék nem található</div>
+      </div>
+    );
+  }
+
+  const basePrice = parseFloat(product.price) || 0;
+
+  return (
+    <div className="123
+    priceflow-widget-container">
+      <ProductConfigurator
+        productId={product.productId}
+        variantId={product.variantId}
+        productTitle={product.title}
+        productImage={product.imageUrl}
+        basePrice={basePrice}
+        vendor={product.vendor}
+        tags={product.tags}
+        onAddToCart={handleAddToCart}
+      />
     </div>
   );
 }

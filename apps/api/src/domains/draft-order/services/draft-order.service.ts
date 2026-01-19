@@ -9,6 +9,7 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { ShopifyService } from '../../auth/services/shopify.service';
 import { CreateDraftOrderDto, LineItemDto } from '../dto/create-draft-order.dto';
 import { AddItemDto } from '../dto/add-item.dto';
+import { CreateFromCartDto, CartItemDto } from '../dto/create-from-cart.dto';
 
 @Injectable()
 export class DraftOrderService {
@@ -249,6 +250,108 @@ export class DraftOrderService {
       console.error('[DraftOrderService] Error completing draft order:', error);
       throw new BadRequestException(`Failed to complete draft order: ${error.message}`);
     }
+  }
+
+  /**
+   * Create Draft Order from Cart items (localStorage format)
+   *
+   * @param shopDomain - Shop domain
+   * @param accessToken - OAuth access token
+   * @param createDto - Cart items from localStorage
+   * @returns Created Draft Order response
+   */
+  async createFromCart(
+    shopDomain: string,
+    accessToken: string,
+    createDto: CreateFromCartDto,
+  ) {
+    const client = this.shopifyService.getRestClient(shopDomain, accessToken);
+
+    try {
+      // Build Shopify Draft Order payload from cart items
+      const draftOrderPayload = {
+        draft_order: {
+          line_items: createDto.items.map((item) => this.buildLineItemFromCart(item)),
+          note: createDto.note || 'Created by PriceFlow',
+          tags: createDto.tags?.join(', ') || 'priceflow,custom-pricing',
+          email: createDto.email,
+        },
+      };
+
+      if (createDto.customerId) {
+        draftOrderPayload.draft_order['customer'] = {
+          id: createDto.customerId,
+        };
+      }
+
+      console.log('[DraftOrderService] Creating draft order from cart for shop:', shopDomain);
+      console.log('[DraftOrderService] Cart items count:', createDto.items.length);
+
+      // Create Draft Order via Shopify Admin API
+      const response = await client.post({
+        path: 'draft_orders',
+        data: draftOrderPayload,
+      });
+
+      const draftOrder = response.body.draft_order;
+
+      console.log('[DraftOrderService] Draft order created from cart:', draftOrder.id);
+
+      // Return formatted response
+      return {
+        id: draftOrder.id.toString(),
+        invoiceUrl: draftOrder.invoice_url,
+        subtotalPrice: draftOrder.subtotal_price,
+        totalPrice: draftOrder.total_price,
+        totalTax: draftOrder.total_tax,
+        lineItems: createDto.items.map((item) => ({
+          id: item.id,
+          variantId: item.variant_id,
+          title: item.product_title,
+          quantity: item.quantity,
+          price: item.final_price.toFixed(2),
+          linePrice: item.final_line_price.toFixed(2),
+          image: item.image,
+          properties: item.properties,
+        })),
+        status: draftOrder.status,
+        createdAt: draftOrder.created_at,
+        expiresAt: this.calculateExpirationDate(),
+      };
+    } catch (error) {
+      console.error('[DraftOrderService] Error creating draft order from cart:', error);
+      console.error('[DraftOrderService] Error details:', {
+        name: error.name,
+        message: error.message,
+        cause: error.cause,
+        stack: error.stack?.split('\n').slice(0, 5).join('\n'),
+      });
+      throw new BadRequestException(`Failed to create draft order: ${error.message}`);
+    }
+  }
+
+  /**
+   * Build Shopify line item from Cart item
+   *
+   * @param item - Cart item from localStorage
+   * @returns Shopify line item format
+   */
+  private buildLineItemFromCart(item: CartItemDto) {
+    // IMPORTANT: Shopify IGNORES 'price' field when 'variant_id' is present!
+    // For custom pricing, we MUST NOT use variant_id - only custom line items
+    return {
+      title: item.product_title,
+      quantity: item.quantity,
+      price: item.final_price.toFixed(2),
+      taxable: true,
+      requires_shipping: true,
+      properties: item.properties
+        ? Object.entries(item.properties).map(([name, value]) => ({
+            name,
+            value: String(value),
+          }))
+        : undefined,
+    };
   }
 
   /**

@@ -98,6 +98,7 @@ export const FieldsList: React.FC<FieldsListProps> = ({ fields, onChange }) => {
           <FieldEditor
             field={editingField}
             existingKeys={fields.map((f) => f.key)}
+            fieldCount={fields.length}
             onSave={handleSave}
             onClose={() => {
               setShowEditor(false);
@@ -134,7 +135,13 @@ export const FieldsList: React.FC<FieldsListProps> = ({ fields, onChange }) => {
                 <Badge tone="info">{getFieldTypeLabel(field.type)}</Badge>
                 <Badge>{field.key}</Badge>
                 {field.required && <Badge tone="attention">Kötelező</Badge>}
-                {field.type === 'NUMBER' && <Badge tone="success">Képletben</Badge>}
+                {field.useInFormula !== false && field.type === 'NUMBER' && (
+                  <Badge tone="success">Képletben</Badge>
+                )}
+                {field.useInFormula === false && (
+                  <Badge>Nincs árhatás</Badge>
+                )}
+                {field.helpText && <Badge tone="info">Segítség</Badge>}
               </InlineStack>
 
               <InlineStack gap="200">
@@ -156,6 +163,7 @@ export const FieldsList: React.FC<FieldsListProps> = ({ fields, onChange }) => {
           existingKeys={fields
             .map((f) => f.key)
             .filter((_, i) => i !== editingIndex)}
+          fieldCount={fields.length}
           onSave={handleSave}
           onClose={() => {
             setShowEditor(false);

@@ -5,12 +5,33 @@ import {
   IsEnum,
   IsArray,
   IsBoolean,
+  IsNumber,
   ValidateNested,
   ArrayMinSize,
   MaxLength,
+  Min,
+  Max,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ScopeType, FieldType } from '@prisma/client';
+
+/**
+ * Sávos kedvezmény DTO
+ */
+export class DiscountTierDto {
+  @IsNumber()
+  @Min(1)
+  minQty: number;
+
+  @IsNumber()
+  @IsOptional()
+  maxQty?: number | null;
+
+  @IsNumber()
+  @Min(0)
+  @Max(100)
+  discount: number;
+}
 
 /**
  * Template Field DTO
@@ -139,4 +160,53 @@ export class CreateTemplateDto {
   @Type(() => CreateTemplateFieldDto)
   @IsOptional()
   fields?: CreateTemplateFieldDto[] = [];
+
+  // Min/Max rendelési mennyiség
+  @IsNumber()
+  @IsOptional()
+  @Min(1)
+  minQuantity?: number;
+
+  @IsNumber()
+  @IsOptional()
+  @Min(1)
+  maxQuantity?: number;
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(500)
+  minQuantityMessage?: string;
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(500)
+  maxQuantityMessage?: string;
+
+  // Sávos kedvezmények
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => DiscountTierDto)
+  @IsOptional()
+  discountTiers?: DiscountTierDto[];
+
+  // Expressz gyártás
+  @IsBoolean()
+  @IsOptional()
+  hasExpressOption?: boolean;
+
+  @IsNumber()
+  @IsOptional()
+  @Min(1)
+  @Max(10)
+  expressMultiplier?: number;
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(255)
+  expressLabel?: string;
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(255)
+  normalLabel?: string;
 }

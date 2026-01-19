@@ -5,11 +5,12 @@ import { AppModule } from './app.module';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // Enable CORS for frontend
+  // Enable CORS for frontend and Shopify stores
   app.enableCors({
     origin: [
-      'http://localhost:3000',        // Development - Next.js
-      'https://app.teszt.uk',         // Production
+      'http://localhost:3000',                    // Development - Next.js
+      'https://app.teszt.uk',                     // Production
+      /\.myshopify\.com$/,                        // All Shopify stores
     ],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],

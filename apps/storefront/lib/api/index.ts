@@ -16,6 +16,7 @@
 
 import { apiClient } from './client';
 import { draftOrdersApi } from './endpoints/draft-orders';
+import { pricingApi } from './endpoints/pricing';
 
 /**
  * Global API object
@@ -27,6 +28,11 @@ export const api = {
    * Draft Orders endpoints (Custom Pricing)
    */
   draftOrders: draftOrdersApi,
+
+  /**
+   * Pricing endpoints (Template-based calculations)
+   */
+  pricing: pricingApi,
 };
 
 /**
@@ -39,3 +45,4 @@ export { ApiError } from './client';
  * Export individual endpoint modules for tree-shaking
  */
 export { draftOrdersApi } from './endpoints/draft-orders';
+export { pricingApi } from './endpoints/pricing';

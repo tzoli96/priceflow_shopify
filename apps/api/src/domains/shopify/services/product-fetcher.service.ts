@@ -1,5 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { ShopifyService } from '../../auth/services/shopify.service';
+import axios from 'axios';
+
+const API_VERSION = '2026-01';
 
 /**
  * Product Fetcher Service
@@ -11,10 +14,37 @@ import { ShopifyService } from '../../auth/services/shopify.service';
  * - getCollections(): Kollekciók listája
  * - getVendors(): Vendor-ek listája
  * - getTags(): Tag-ek listája
+ *
+ * Megjegyzés: axios-t használunk a Shopify REST kliens helyett,
+ * mert a Docker konténerben IPv4 kényszerítés szükséges.
  */
 @Injectable()
 export class ProductFetcherService {
   constructor(private readonly shopifyService: ShopifyService) {}
+
+  /**
+   * Shopify REST API hívás axios-szal (IPv4 támogatással)
+   */
+  private async shopifyGet(
+    shopDomain: string,
+    accessToken: string,
+    endpoint: string,
+    params?: Record<string, any>,
+  ): Promise<any> {
+    const url = `https://${shopDomain}/admin/api/${API_VERSION}/${endpoint}.json`;
+
+    const response = await axios.get(url, {
+      headers: {
+        'X-Shopify-Access-Token': accessToken,
+        'Content-Type': 'application/json',
+      },
+      params,
+      timeout: 30000,
+      family: 4, // Force IPv4
+    });
+
+    return response;
+  }
 
   /**
    * Termékek lekérése (single page with pagination metadata)
@@ -40,8 +70,6 @@ export class ProductFetcherService {
     hasNextPage: boolean;
     hasPreviousPage: boolean;
   }> {
-    const client = this.shopifyService.getRestClient(shopDomain, accessToken);
-
     try {
       const pageLimit = options?.limit || 250; // Max 250 per page
 
@@ -70,18 +98,15 @@ export class ProductFetcherService {
 
       console.log('[ProductFetcherService] Query params:', queryParams);
 
-      const response = await client.get({
-        path: 'products',
-        query: queryParams,
-      });
+      const response = await this.shopifyGet(
+        shopDomain,
+        accessToken,
+        'products',
+        queryParams,
+      );
 
-      const products = response.body.products || [];
-      const linkHeaderRaw = response.headers?.link;
-
-      // Normalize link header to string (headers can be string or string[])
-      const linkHeader = Array.isArray(linkHeaderRaw)
-        ? linkHeaderRaw[0]
-        : linkHeaderRaw;
+      const products = response.data.products || [];
+      const linkHeader = response.headers?.link;
 
       // Parse pagination from Link header
       const nextPageInfo = this.extractNextPageInfo(linkHeader);
@@ -159,21 +184,21 @@ export class ProductFetcherService {
     shopDomain: string,
     accessToken: string,
   ): Promise<any[]> {
-    const client = this.shopifyService.getRestClient(shopDomain, accessToken);
-
     try {
-      const response = await client.get({
-        path: 'custom_collections',
-      });
-
-      const customCollections = response.body.custom_collections || [];
+      const customResponse = await this.shopifyGet(
+        shopDomain,
+        accessToken,
+        'custom_collections',
+      );
+      const customCollections = customResponse.data.custom_collections || [];
 
       // Smart collections is lekérése
-      const smartResponse = await client.get({
-        path: 'smart_collections',
-      });
-
-      const smartCollections = smartResponse.body.smart_collections || [];
+      const smartResponse = await this.shopifyGet(
+        shopDomain,
+        accessToken,
+        'smart_collections',
+      );
+      const smartCollections = smartResponse.data.smart_collections || [];
 
       return [...customCollections, ...smartCollections];
     } catch (error) {

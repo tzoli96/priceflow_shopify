@@ -5,26 +5,25 @@ name = "PriceFlow Widget"
 
 [[extensions]]
 type = "theme"
-name = "PriceFlow Widget"
+name = "PriceFlow Konfigurátor"
 handle = "priceflow-widget"
 
   [[extensions.blocks]]
   type = "app"
-  name = "Price Comparison Widget"
-
-    [[extensions.blocks.settings]]
-    type = "product"
-    id = "product"
-    label = "Product"
+  name = "PriceFlow Konfigurátor"
 
     [[extensions.blocks.settings]]
     type = "text"
-    id = "title"
-    label = "Widget Title"
-    default = "Compare Prices"
+    id = "widget_url"
+    label = "Widget URL"
+    default = "https://app.teszt.uk"
 
     [[extensions.blocks.settings]]
-    type = "checkbox"
-    id = "show_competitors"
-    label = "Show Competitor Prices"
-    default = true
+    type = "range"
+    id = "widget_height"
+    min = 300
+    max = 800
+    step = 50
+    unit = "px"
+    label = "Widget magasság"
+    default = 500

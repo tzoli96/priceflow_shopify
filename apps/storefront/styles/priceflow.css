@@ -1,0 +1,523 @@
+/**
+ * PriceFlow Configurator Styles
+ *
+ * Base styles for the product configurator widget.
+ * These can be overridden by the Shopify theme.
+ */
+
+/* Widget container (for iframe embed) */
+.priceflow-widget-container {
+  min-height: 100%;
+  padding: 1rem;
+  background: #fff;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
+    Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+}
+
+.priceflow-widget-container.priceflow-widget-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+}
+
+/* Container */
+.priceflow-configurator {
+  font-family: inherit;
+  padding: 1rem;
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
+  background: #fff;
+  margin-bottom: 1rem;
+}
+
+/* Loading */
+.priceflow-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 2rem;
+  color: #666;
+}
+
+.priceflow-spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #e5e5e5;
+  border-top-color: #333;
+  border-radius: 50%;
+  animation: priceflow-spin 0.8s linear infinite;
+}
+
+@keyframes priceflow-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Error */
+.priceflow-error {
+  padding: 1rem;
+  background: #fef2f2;
+  color: #dc2626;
+  border-radius: 4px;
+}
+
+/* Description */
+.priceflow-description {
+  margin-bottom: 1rem;
+  color: #666;
+  font-size: 0.875rem;
+}
+
+/* Fields */
+.priceflow-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.priceflow-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.priceflow-label {
+  font-weight: 500;
+  font-size: 0.875rem;
+  color: #333;
+}
+
+.priceflow-required {
+  color: #dc2626;
+  margin-left: 0.25rem;
+}
+
+.priceflow-input {
+  width: 100%;
+  padding: 0.625rem 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 1rem;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.priceflow-input:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.priceflow-textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.priceflow-select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3E%3C/svg%3E");
+  background-position: right 0.5rem center;
+  background-repeat: no-repeat;
+  background-size: 1.5em 1.5em;
+  padding-right: 2.5rem;
+}
+
+.priceflow-help-text {
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+/* Radio group */
+.priceflow-radio-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.priceflow-radio-option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: border-color 0.15s, background-color 0.15s;
+}
+
+.priceflow-radio-option:hover {
+  border-color: #9ca3af;
+}
+
+.priceflow-radio-option.selected {
+  border-color: #2563eb;
+  background-color: #eff6ff;
+}
+
+.priceflow-radio-option input[type='radio'] {
+  margin: 0;
+}
+
+.priceflow-radio-label {
+  flex: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.priceflow-option-price {
+  color: #059669;
+  font-weight: 500;
+}
+
+/* Checkbox */
+.priceflow-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+}
+
+.priceflow-checkbox {
+  width: 1rem;
+  height: 1rem;
+}
+
+/* Quantity */
+.priceflow-quantity {
+  margin-bottom: 1.5rem;
+}
+
+.priceflow-quantity-label {
+  display: block;
+  font-weight: 500;
+  font-size: 0.875rem;
+  color: #333;
+  margin-bottom: 0.375rem;
+}
+
+.priceflow-quantity-controls {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  width: fit-content;
+}
+
+.priceflow-quantity-btn {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #d1d5db;
+  background: #f9fafb;
+  font-size: 1.25rem;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.priceflow-quantity-btn:hover:not(:disabled) {
+  background: #e5e7eb;
+}
+
+.priceflow-quantity-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.priceflow-quantity-minus {
+  border-radius: 6px 0 0 6px;
+}
+
+.priceflow-quantity-plus {
+  border-radius: 0 6px 6px 0;
+}
+
+.priceflow-quantity-input {
+  width: 60px;
+  height: 40px;
+  text-align: center;
+  border: 1px solid #d1d5db;
+  border-left: none;
+  border-right: none;
+  font-size: 1rem;
+  -moz-appearance: textfield;
+}
+
+.priceflow-quantity-input::-webkit-outer-spin-button,
+.priceflow-quantity-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.priceflow-quantity-error {
+  margin-top: 0.375rem;
+  font-size: 0.75rem;
+  color: #dc2626;
+}
+
+/* Discount tiers */
+.priceflow-discount-tiers {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: #f9fafb;
+  border-radius: 6px;
+}
+
+.priceflow-discount-title {
+  font-weight: 500;
+  font-size: 0.875rem;
+  color: #333;
+  margin-bottom: 0.75rem;
+}
+
+.priceflow-discount-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.priceflow-discount-tier {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.5rem 0.75rem;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+  font-size: 0.75rem;
+}
+
+.priceflow-discount-tier.active {
+  border-color: #059669;
+  background: #ecfdf5;
+}
+
+.priceflow-tier-range {
+  color: #6b7280;
+}
+
+.priceflow-tier-discount {
+  font-weight: 600;
+  color: #059669;
+}
+
+.priceflow-discount-active {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #e5e7eb;
+  font-size: 0.875rem;
+  color: #059669;
+}
+
+/* Express selector */
+.priceflow-express-selector {
+  margin-bottom: 1.5rem;
+}
+
+.priceflow-express-title {
+  font-weight: 500;
+  font-size: 0.875rem;
+  color: #333;
+  margin-bottom: 0.75rem;
+}
+
+.priceflow-express-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.priceflow-express-option {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: border-color 0.15s, background-color 0.15s;
+}
+
+.priceflow-express-option:hover {
+  border-color: #d1d5db;
+}
+
+.priceflow-express-option.selected {
+  border-color: #2563eb;
+  background-color: #eff6ff;
+}
+
+.priceflow-express-option input[type='radio'] {
+  margin: 0;
+}
+
+.priceflow-express-content {
+  flex: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.priceflow-express-label-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.priceflow-express-label {
+  font-weight: 500;
+}
+
+.priceflow-express-badge {
+  padding: 0.125rem 0.5rem;
+  background: #fef3c7;
+  color: #d97706;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.priceflow-express-price {
+  font-weight: 600;
+  color: #333;
+}
+
+/* Price display */
+.priceflow-price-display {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: #f3f4f6;
+  border-radius: 8px;
+}
+
+.priceflow-price-main {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.priceflow-price-label {
+  font-size: 1rem;
+  color: #333;
+}
+
+.priceflow-price-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #111;
+}
+
+.priceflow-price-value.calculating {
+  opacity: 0.5;
+}
+
+.priceflow-price-calculating {
+  font-size: 1rem;
+  font-weight: normal;
+  color: #666;
+}
+
+.priceflow-discount-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  padding: 0.25rem 0.75rem;
+  background: #dcfce7;
+  color: #166534;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.priceflow-original-price {
+  text-decoration: line-through;
+  opacity: 0.7;
+}
+
+.priceflow-breakdown-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-top: 0.75rem;
+  padding: 0;
+  border: none;
+  background: none;
+  color: #2563eb;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.priceflow-breakdown-toggle:hover {
+  text-decoration: underline;
+}
+
+.priceflow-arrow {
+  font-size: 0.75rem;
+  transition: transform 0.15s;
+}
+
+.priceflow-arrow.up {
+  transform: rotate(180deg);
+}
+
+.priceflow-breakdown {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #d1d5db;
+}
+
+.priceflow-breakdown-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.375rem 0;
+  font-size: 0.875rem;
+}
+
+.priceflow-breakdown-label {
+  color: #6b7280;
+}
+
+.priceflow-breakdown-value {
+  font-weight: 500;
+}
+
+.priceflow-breakdown-total {
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid #d1d5db;
+  font-weight: 600;
+}
+
+.priceflow-breakdown-total .priceflow-breakdown-label,
+.priceflow-breakdown-total .priceflow-breakdown-value {
+  color: #111;
+}
+
+/* Add to cart button */
+.priceflow-add-to-cart {
+  width: 100%;
+  padding: 1rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  background: #2563eb;
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.priceflow-add-to-cart:hover:not(:disabled) {
+  background: #1d4ed8;
+}
+
+.priceflow-add-to-cart:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

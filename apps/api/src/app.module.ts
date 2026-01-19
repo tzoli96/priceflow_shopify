@@ -9,6 +9,7 @@ import { TemplateModule } from './domains/template/template.module';
 import { ShopifyModule } from './domains/shopify/shopify.module';
 import { AssignmentModule } from './domains/assignment/assignment.module';
 import { DraftOrderModule } from './domains/draft-order/draft-order.module';
+import { PricingModule } from './domains/pricing/pricing.module';
 import { ShopHeaderInterceptor } from './domains/common/interceptors/shop-header.interceptor';
 
 @Module({
@@ -20,6 +21,7 @@ import { ShopHeaderInterceptor } from './domains/common/interceptors/shop-header
     ShopifyModule,    // Shopify integration (products, collections, etc.)
     AssignmentModule, // Assignment domain (template assignments)
     DraftOrderModule, // Draft Orders (custom pricing)
+    PricingModule,    // Pricing (template-based price calculation)
   ],
   controllers: [AppController],
   providers: [

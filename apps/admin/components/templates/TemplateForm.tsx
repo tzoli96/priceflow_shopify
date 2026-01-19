@@ -1,5 +1,14 @@
 /**
  * TemplateForm - Create and edit templates
+ *
+ * Szekciók:
+ * - Alapadatok (név, leírás)
+ * - Hatókör (scope)
+ * - Mezők konfigurációja
+ * - Árkalkulációs képlet
+ * - Rendelési mennyiség (min/max)
+ * - Sávos kedvezmények
+ * - Expressz gyártás opció
  */
 
 'use client';
@@ -15,8 +24,18 @@ import {
   InlineStack,
   BlockStack,
   Text,
+  Banner,
+  Divider,
+  Box,
 } from '@shopify/polaris';
-import type { Template, CreateTemplateDto, UpdateTemplateDto, ScopeType } from '@/types/template';
+import { PlusIcon, DeleteIcon } from '@shopify/polaris-icons';
+import type {
+  Template,
+  CreateTemplateDto,
+  UpdateTemplateDto,
+  ScopeType,
+  DiscountTier,
+} from '@/types/template';
 import { FormSection } from '@/components/ui/UIComponents';
 import { FieldsList } from './FieldsList';
 import { FormulaBuilder } from './FormulaBuilder';
@@ -48,6 +67,21 @@ export function TemplateForm({
     scopeType: template?.scopeType || ('GLOBAL' as ScopeType),
     scopeValues: template?.scopeValues || [],
     fields: template?.fields || [],
+
+    // Rendelési mennyiség
+    minQuantity: template?.minQuantity?.toString() || '',
+    maxQuantity: template?.maxQuantity?.toString() || '',
+    minQuantityMessage: template?.minQuantityMessage || '',
+    maxQuantityMessage: template?.maxQuantityMessage || '',
+
+    // Sávos kedvezmények
+    discountTiers: template?.discountTiers || ([] as DiscountTier[]),
+
+    // Expressz opció
+    hasExpressOption: template?.hasExpressOption || false,
+    expressMultiplier: template?.expressMultiplier?.toString() || '1.5',
+    expressLabel: template?.expressLabel || 'Expressz gyártás (3 munkanap)',
+    normalLabel: template?.normalLabel || 'Normál gyártás (7-10 munkanap)',
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -91,19 +125,61 @@ export function TemplateForm({
     return Object.keys(newErrors).length === 0;
   };
 
+  // Sávos kedvezmény kezelő függvények
+  const addDiscountTier = () => {
+    const lastTier = formData.discountTiers[formData.discountTiers.length - 1];
+    const newTier: DiscountTier = {
+      minQty: lastTier ? (lastTier.maxQty || 0) + 1 : 1,
+      maxQty: null,
+      discount: 0,
+    };
+    handleChange('discountTiers', [...formData.discountTiers, newTier]);
+  };
+
+  const updateDiscountTier = (index: number, updates: Partial<DiscountTier>) => {
+    const newTiers = [...formData.discountTiers];
+    newTiers[index] = { ...newTiers[index], ...updates };
+    handleChange('discountTiers', newTiers);
+  };
+
+  const removeDiscountTier = (index: number) => {
+    handleChange(
+      'discountTiers',
+      formData.discountTiers.filter((_, i) => i !== index)
+    );
+  };
+
   const handleSubmit = async () => {
     if (!validate()) {
       return;
     }
 
     try {
-      const submitData = {
+      const submitData: CreateTemplateDto | UpdateTemplateDto = {
         name: formData.name,
         description: formData.description || undefined,
         pricingFormula: formData.pricingFormula,
         scopeType: formData.scopeType,
         scopeValues: formData.scopeValues,
         fields: formData.fields,
+
+        // Rendelési mennyiség
+        minQuantity: formData.minQuantity ? Number(formData.minQuantity) : undefined,
+        maxQuantity: formData.maxQuantity ? Number(formData.maxQuantity) : undefined,
+        minQuantityMessage: formData.minQuantityMessage || undefined,
+        maxQuantityMessage: formData.maxQuantityMessage || undefined,
+
+        // Sávos kedvezmények
+        discountTiers:
+          formData.discountTiers.length > 0 ? formData.discountTiers : undefined,
+
+        // Expressz opció
+        hasExpressOption: formData.hasExpressOption,
+        expressMultiplier: formData.hasExpressOption
+          ? Number(formData.expressMultiplier)
+          : undefined,
+        expressLabel: formData.hasExpressOption ? formData.expressLabel : undefined,
+        normalLabel: formData.hasExpressOption ? formData.normalLabel : undefined,
       };
 
       await onSubmit(submitData);
@@ -199,6 +275,190 @@ export function TemplateForm({
               onChange={(formula) => handleChange('pricingFormula', formula)}
               error={errors.pricingFormula}
             />
+          </FormSection>
+        </Card>
+
+        {/* Quantity Limits */}
+        <Card>
+          <FormSection
+            title="Rendelési mennyiség"
+            description="Állítsd be a minimális és maximális rendelhető mennyiséget (opcionális)"
+          >
+            <FormLayout>
+              <FormLayout.Group>
+                <TextField
+                  label="Minimum mennyiség"
+                  type="number"
+                  value={formData.minQuantity}
+                  onChange={(value) => handleChange('minQuantity', value)}
+                  placeholder="pl. 1"
+                  autoComplete="off"
+                />
+                <TextField
+                  label="Maximum mennyiség"
+                  type="number"
+                  value={formData.maxQuantity}
+                  onChange={(value) => handleChange('maxQuantity', value)}
+                  placeholder="pl. 100"
+                  autoComplete="off"
+                />
+              </FormLayout.Group>
+
+              <TextField
+                label="Minimum üzenet"
+                value={formData.minQuantityMessage}
+                onChange={(value) => handleChange('minQuantityMessage', value)}
+                placeholder="pl. Minimum 5 db rendelhető"
+                helpText="Ez jelenik meg, ha a vevő kevesebbet próbál rendelni"
+                autoComplete="off"
+              />
+
+              <TextField
+                label="Maximum üzenet"
+                value={formData.maxQuantityMessage}
+                onChange={(value) => handleChange('maxQuantityMessage', value)}
+                placeholder="pl. Maximum 100 db rendelhető online, nagyobb mennyiséghez kérj ajánlatot"
+                helpText="Ez jelenik meg, ha a vevő többet próbál rendelni"
+                autoComplete="off"
+              />
+            </FormLayout>
+          </FormSection>
+        </Card>
+
+        {/* Discount Tiers */}
+        <Card>
+          <FormSection
+            title="Sávos kedvezmények"
+            description="Mennyiségi kedvezmények beállítása - termékenként számítva"
+          >
+            <BlockStack gap="400">
+              {formData.discountTiers.length > 0 && (
+                <BlockStack gap="300">
+                  {formData.discountTiers.map((tier, index) => (
+                    <Box
+                      key={index}
+                      padding="300"
+                      background="bg-surface-secondary"
+                      borderRadius="200"
+                    >
+                      <InlineStack gap="300" align="center" blockAlign="end">
+                        <div style={{ flex: 1 }}>
+                          <TextField
+                            label="Min. db"
+                            type="number"
+                            value={tier.minQty.toString()}
+                            onChange={(value) =>
+                              updateDiscountTier(index, { minQty: Number(value) })
+                            }
+                            autoComplete="off"
+                            labelHidden={index > 0}
+                          />
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <TextField
+                            label="Max. db"
+                            type="number"
+                            value={tier.maxQty?.toString() || ''}
+                            onChange={(value) =>
+                              updateDiscountTier(index, {
+                                maxQty: value ? Number(value) : null,
+                              })
+                            }
+                            placeholder="∞"
+                            autoComplete="off"
+                            labelHidden={index > 0}
+                          />
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <TextField
+                            label="Kedvezmény %"
+                            type="number"
+                            value={tier.discount.toString()}
+                            onChange={(value) =>
+                              updateDiscountTier(index, { discount: Number(value) })
+                            }
+                            suffix="%"
+                            autoComplete="off"
+                            labelHidden={index > 0}
+                          />
+                        </div>
+                        <Button
+                          icon={DeleteIcon}
+                          tone="critical"
+                          onClick={() => removeDiscountTier(index)}
+                          accessibilityLabel="Sáv törlése"
+                        />
+                      </InlineStack>
+                    </Box>
+                  ))}
+                </BlockStack>
+              )}
+
+              <Button icon={PlusIcon} onClick={addDiscountTier}>
+                Kedvezmény sáv hozzáadása
+              </Button>
+
+              {formData.discountTiers.length > 0 && (
+                <Banner tone="info">
+                  Példa: 1-5 db = 0%, 6-9 db = 10%, 10+ db = 15%. A kedvezmény a végső
+                  számított árból vonódik le.
+                </Banner>
+              )}
+            </BlockStack>
+          </FormSection>
+        </Card>
+
+        {/* Express Option */}
+        <Card>
+          <FormSection
+            title="Expressz gyártás"
+            description="Gyorsított gyártás opció feláras szolgáltatásként"
+          >
+            <BlockStack gap="400">
+              <Checkbox
+                label="Expressz gyártás opció engedélyezése"
+                checked={formData.hasExpressOption}
+                onChange={(checked) => handleChange('hasExpressOption', checked)}
+              />
+
+              {formData.hasExpressOption && (
+                <>
+                  <Divider />
+                  <FormLayout>
+                    <TextField
+                      label="Expressz szorzó"
+                      type="number"
+                      value={formData.expressMultiplier}
+                      onChange={(value) => handleChange('expressMultiplier', value)}
+                      helpText="pl. 1.5 = +50% felár az alapárhoz képest"
+                      autoComplete="off"
+                    />
+
+                    <FormLayout.Group>
+                      <TextField
+                        label="Normál gyártás címke"
+                        value={formData.normalLabel}
+                        onChange={(value) => handleChange('normalLabel', value)}
+                        placeholder="Normál gyártás (7-10 munkanap)"
+                        autoComplete="off"
+                      />
+                      <TextField
+                        label="Expressz gyártás címke"
+                        value={formData.expressLabel}
+                        onChange={(value) => handleChange('expressLabel', value)}
+                        placeholder="Expressz gyártás (3 munkanap)"
+                        autoComplete="off"
+                      />
+                    </FormLayout.Group>
+                  </FormLayout>
+
+                  <Banner tone="info">
+                    A vásárló a termék oldalon választhat a normál és az expressz gyártás
+                    között. Az expressz ár = alapár × {formData.expressMultiplier || '1.5'}
+                  </Banner>
+                </>
+              )}
+            </BlockStack>
           </FormSection>
         </Card>
 
