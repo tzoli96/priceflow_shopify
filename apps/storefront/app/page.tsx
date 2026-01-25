@@ -14,8 +14,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { ProductConfigurator, AddToCartData } from '@/components/pricing/ProductConfigurator';
-import '@/styles/priceflow.css';
+import { DekormunkaConfigurator, AddToCartData } from '@/components/pricing/DekormunkaConfigurator';
+import '@/styles/dekormunka.css';
 
 interface ProductData {
   productId: string;
@@ -180,9 +180,9 @@ export default function Home() {
 
   if (loading) {
     return (
-      <div className="priceflow-widget-container priceflow-widget-loading">
-        <div className="priceflow-loading">
-          <div className="priceflow-spinner" />
+      <div className="dekormunka-configurator">
+        <div className="dekormunka-loading">
+          <div className="dekormunka-spinner" />
           <span>Konfigurátor betöltése...</span>
         </div>
       </div>
@@ -191,16 +191,16 @@ export default function Home() {
 
   if (error) {
     return (
-      <div className="priceflow-widget-container">
-        <div className="priceflow-error">{error}</div>
+      <div className="dekormunka-configurator">
+        <div className="dekormunka-error">{error}</div>
       </div>
     );
   }
 
   if (!product) {
     return (
-      <div className="priceflow-widget-container">
-        <div className="priceflow-error">Termék nem található</div>
+      <div className="dekormunka-configurator">
+        <div className="dekormunka-error">Termék nem található</div>
       </div>
     );
   }
@@ -208,17 +208,15 @@ export default function Home() {
   const basePrice = parseFloat(product.price) || 0;
 
   return (
-    <div className="priceflow-widget-container">
-      <ProductConfigurator
-        productId={product.productId}
-        variantId={product.variantId}
-        productTitle={product.title}
-        productImage={product.imageUrl}
-        basePrice={basePrice}
-        vendor={product.vendor}
-        tags={product.tags}
-        onAddToCart={handleAddToCart}
-      />
-    </div>
+    <DekormunkaConfigurator
+      productId={product.productId}
+      variantId={product.variantId}
+      productTitle={product.title}
+      productImage={product.imageUrl}
+      basePrice={basePrice}
+      vendor={product.vendor}
+      tags={product.tags}
+      onAddToCart={handleAddToCart}
+    />
   );
 }

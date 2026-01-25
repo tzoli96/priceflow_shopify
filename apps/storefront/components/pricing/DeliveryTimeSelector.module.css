@@ -1,0 +1,150 @@
+/**
+ * DeliveryTimeSelector Styles
+ * Átfutási idő választó kártyák
+ */
+
+.container {
+  width: 100%;
+}
+
+.label {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 12px;
+}
+
+.required {
+  color: #d72c0d;
+  margin-left: 4px;
+}
+
+.options {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Option card */
+.option {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  background: #ffffff;
+  border: 2px solid #e1e3e5;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.option:hover {
+  border-color: #c9cccf;
+  background: #fafbfc;
+}
+
+.option.selected {
+  border-color: #d72c0d;
+  background: #fff5f5;
+}
+
+/* Hidden radio input */
+.radio {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Custom radio indicator */
+.radioIndicator {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border: 2px solid #c9cccf;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.option:hover .radioIndicator {
+  border-color: #8c9196;
+}
+
+.option.selected .radioIndicator {
+  border-color: #d72c0d;
+}
+
+.radioInner {
+  width: 12px;
+  height: 12px;
+  background: #d72c0d;
+  border-radius: 50%;
+}
+
+/* Content */
+.content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.description {
+  font-size: 13px;
+  color: #6b7177;
+  line-height: 1.4;
+}
+
+/* Price */
+.price {
+  flex-shrink: 0;
+  text-align: right;
+}
+
+.priceValue {
+  font-size: 15px;
+  font-weight: 700;
+  color: #d72c0d;
+}
+
+.priceIncluded {
+  font-size: 13px;
+  font-weight: 500;
+  color: #008060;
+}
+
+/* Error */
+.error {
+  color: #d72c0d;
+  font-size: 13px;
+  margin-top: 8px;
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+  .option {
+    padding: 14px 16px;
+    gap: 12px;
+  }
+
+  .title {
+    font-size: 14px;
+  }
+
+  .description {
+    font-size: 12px;
+  }
+
+  .priceValue {
+    font-size: 14px;
+  }
+}

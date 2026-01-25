@@ -19,11 +19,10 @@ import type {
   ProductTemplateInfo,
   PriceCalculationResult,
   TemplateField,
+  TemplateSection,
 } from '@/types/pricing';
-import { CollapsibleSection } from './CollapsibleSection';
-import { CardSelector } from './CardSelector';
-import { PresetChips } from './PresetChips';
 import { FileUpload } from './FileUpload';
+import { SectionRenderer } from './SectionRenderer';
 
 interface DekormunkaConfiguratorProps {
   productId: string;
@@ -273,17 +272,25 @@ export function DekormunkaConfigurator({
     return !quantityError;
   };
 
-  // Group fields by type for sectioning
-  const groupFields = () => {
-    if (!templateInfo?.template?.fields) return { number: [], select: [], checkbox: [], other: [] };
+  // Calculate m² from width and height
+  const calculateSquareMeters = (): number | null => {
+    const widthField = templateInfo?.template?.fields.find(f =>
+      f.key.toLowerCase().includes('width') || f.key === 'szelesseg' || f.key === 'vizszintes'
+    );
+    const heightField = templateInfo?.template?.fields.find(f =>
+      f.key.toLowerCase().includes('height') || f.key === 'magassag' || f.key === 'fuggoleges'
+    );
 
-    const sorted = [...templateInfo.template.fields].sort((a, b) => a.order - b.order);
-    return {
-      number: sorted.filter(f => f.type === 'NUMBER'),
-      select: sorted.filter(f => f.type === 'SELECT' || f.type === 'RADIO'),
-      checkbox: sorted.filter(f => f.type === 'CHECKBOX'),
-      other: sorted.filter(f => !['NUMBER', 'SELECT', 'RADIO', 'CHECKBOX'].includes(f.type)),
-    };
+    if (!widthField || !heightField) return null;
+
+    const width = Number(fieldValues[widthField.key]) || 0;
+    const height = Number(fieldValues[heightField.key]) || 0;
+
+    if (width > 0 && height > 0) {
+      // Convert cm to m² (cm * cm / 10000)
+      return (width * height) / 10000;
+    }
+    return null;
   };
 
   // Loading state
@@ -313,7 +320,6 @@ export function DekormunkaConfigurator({
   }
 
   const template = templateInfo.template;
-  const fieldGroups = groupFields();
   let sectionNumber = 0;
 
   return (
@@ -321,309 +327,122 @@ export function DekormunkaConfigurator({
       <div className="dekormunka-layout">
         {/* Left side - Form sections */}
         <div className="dekormunka-form">
-          {/* Number fields (size inputs) */}
-          {fieldGroups.number.length > 0 && (
-            <CollapsibleSection
-              number={++sectionNumber}
-              title="Válassz méretet!"
-              defaultOpen={true}
-            >
-              <div className="dekormunka-size-section">
-                <div className="dekormunka-size-inputs">
-                  {fieldGroups.number.map((field) => (
-                    <div key={field.key} className="dekormunka-size-input-group">
-                      <label className="dekormunka-label">{field.label}</label>
-                      <div className="dekormunka-input-with-unit">
+          {/* Section-based rendering */}
+          {(template.sections || []).sort((a, b) => a.order - b.order).map((section) => {
+            sectionNumber++;
+
+            // Built-in section content
+            const getBuiltInContent = () => {
+              switch (section.builtInType) {
+                case 'QUANTITY':
+                  return (
+                    <div className="dekormunka-quantity-section">
+                      <div className="dekormunka-quantity-controls">
+                        <button
+                          type="button"
+                          className="dekormunka-qty-btn"
+                          onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                          disabled={quantity <= 1}
+                        >
+                          -
+                        </button>
                         <input
                           type="number"
-                          className="dekormunka-input"
-                          value={fieldValues[field.key] || ''}
-                          onChange={(e) => handleFieldChange(field.key, Number(e.target.value))}
-                          min={field.validation?.min}
-                          max={field.validation?.max}
-                          step={field.validation?.step || 1}
-                          placeholder={field.placeholder}
+                          className="dekormunka-qty-input"
+                          value={quantity}
+                          onChange={(e) => setQuantity(Math.max(1, Number(e.target.value)))}
+                          min={1}
                         />
-                        <span className="dekormunka-unit">cm</span>
+                        <button
+                          type="button"
+                          className="dekormunka-qty-btn"
+                          onClick={() => setQuantity(quantity + 1)}
+                        >
+                          +
+                        </button>
                       </div>
-                      {/* Preset values as chips */}
-                      {field.presetValues && field.presetValues.length > 0 && (
-                        <div className="dekormunka-presets">
-                          {field.presetValues.map((preset, idx) => (
+                      <div className="dekormunka-qty-presets">
+                        {(template.quantityPresets || [1, 3, 10]).map((preset, idx) => {
+                          const presetValue = typeof preset === 'number' ? preset : preset.value;
+                          const presetLabel = typeof preset === 'number' ? `${preset} db` : preset.label;
+                          return (
                             <button
                               key={idx}
                               type="button"
-                              onClick={() => handleFieldChange(field.key, preset.value)}
-                              className={`dekormunka-preset-chip ${fieldValues[field.key] === preset.value ? 'selected' : ''}`}
+                              onClick={() => setQuantity(presetValue)}
+                              className={`dekormunka-qty-preset ${quantity === presetValue ? 'selected' : ''}`}
                             >
-                              {preset.label}
+                              {presetLabel}
                             </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </CollapsibleSection>
-          )}
-
-          {/* SELECT/RADIO fields - each gets its own section */}
-          {fieldGroups.select.map((field) => (
-            <CollapsibleSection
-              key={field.key}
-              number={++sectionNumber}
-              title={`Válassz ${field.label.toLowerCase()}!`}
-              defaultOpen={true}
-            >
-              {field.displayStyle === 'card' && field.options ? (
-                <CardSelector
-                  options={field.options}
-                  value={fieldValues[field.key] || ''}
-                  onChange={(value) => handleFieldChange(field.key, value)}
-                  label=""
-                  columns={field.options.length <= 2 ? 2 : field.options.length <= 4 ? 4 : 4}
-                />
-              ) : field.displayStyle === 'chip' && field.options ? (
-                <div className="dekormunka-chip-group">
-                  {field.options.map((option) => (
-                    <button
-                      key={option.value}
-                      type="button"
-                      onClick={() => handleFieldChange(field.key, option.value)}
-                      className={`dekormunka-chip ${fieldValues[field.key] === option.value ? 'selected' : ''}`}
-                    >
-                      {option.label}
-                      {option.price !== undefined && option.price > 0 && (
-                        <span className="dekormunka-chip-price">+{formatPrice(option.price)}</span>
-                      )}
-                    </button>
-                  ))}
-                </div>
-              ) : (
-                // Default: Radio style cards
-                <div className="dekormunka-radio-cards">
-                  {field.options?.map((option) => (
-                    <label
-                      key={option.value}
-                      className={`dekormunka-radio-card ${fieldValues[field.key] === option.value ? 'selected' : ''}`}
-                    >
-                      <input
-                        type="radio"
-                        name={field.key}
-                        value={option.value}
-                        checked={fieldValues[field.key] === option.value}
-                        onChange={() => handleFieldChange(field.key, option.value)}
-                      />
-                      <div className="dekormunka-radio-card-content">
-                        <span className="dekormunka-radio-card-label">{option.label}</span>
-                        {option.price !== undefined && option.price > 0 && (
-                          <span className="dekormunka-radio-card-price">+{formatPrice(option.price)}</span>
-                        )}
+                          );
+                        })}
                       </div>
-                    </label>
-                  ))}
-                </div>
-              )}
-            </CollapsibleSection>
-          ))}
-
-          {/* Checkbox fields (extras) */}
-          {fieldGroups.checkbox.length > 0 && (
-            <CollapsibleSection
-              number={++sectionNumber}
-              title="Válassz extrát!"
-              defaultOpen={true}
-            >
-              <div className="dekormunka-extras">
-                {fieldGroups.checkbox.map((field) => (
-                  <label key={field.key} className="dekormunka-checkbox-card">
-                    <input
-                      type="checkbox"
-                      checked={!!fieldValues[field.key]}
-                      onChange={(e) => handleFieldChange(field.key, e.target.checked)}
-                    />
-                    <div className="dekormunka-checkbox-content">
-                      <span className="dekormunka-checkbox-label">{field.label}</span>
-                      {field.helpText && (
-                        <span className="dekormunka-checkbox-help">{field.helpText}</span>
-                      )}
+                      {quantityError && <div className="dekormunka-qty-error">{quantityError}</div>}
                     </div>
-                  </label>
-                ))}
-              </div>
-            </CollapsibleSection>
-          )}
+                  );
 
-          {/* Quantity section */}
-          <CollapsibleSection
-            number={++sectionNumber}
-            title="Válassz mennyiséget!"
-            defaultOpen={true}
-          >
-            <div className="dekormunka-quantity-section">
-              <div className="dekormunka-quantity-controls">
-                <button
-                  type="button"
-                  className="dekormunka-qty-btn"
-                  onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                  disabled={quantity <= 1}
-                >
-                  -
-                </button>
-                <input
-                  type="number"
-                  className="dekormunka-qty-input"
-                  value={quantity}
-                  onChange={(e) => setQuantity(Math.max(1, Number(e.target.value)))}
-                  min={1}
-                />
-                <button
-                  type="button"
-                  className="dekormunka-qty-btn"
-                  onClick={() => setQuantity(quantity + 1)}
-                >
-                  +
-                </button>
-              </div>
+                case 'EXPRESS':
+                  return (
+                    <div className="dekormunka-express-section">
+                      <label className={`dekormunka-express-option ${!isExpress ? 'selected' : ''}`}>
+                        <input type="radio" name="express" checked={!isExpress} onChange={() => setIsExpress(false)} />
+                        <div className="dekormunka-express-content">
+                          <span className="dekormunka-express-label">{template.normalLabel || 'Normál'}</span>
+                        </div>
+                      </label>
+                      <label className={`dekormunka-express-option ${isExpress ? 'selected' : ''}`}>
+                        <input type="radio" name="express" checked={isExpress} onChange={() => setIsExpress(true)} />
+                        <div className="dekormunka-express-content">
+                          <span className="dekormunka-express-label">
+                            {template.expressLabel || 'Expressz'}
+                            <span className="dekormunka-express-badge">GYORS</span>
+                          </span>
+                        </div>
+                      </label>
+                    </div>
+                  );
 
-              {/* Quantity presets */}
-              <div className="dekormunka-qty-presets">
-                {[1, 5, 10].map((num) => (
-                  <button
-                    key={num}
-                    type="button"
-                    onClick={() => setQuantity(num)}
-                    className={`dekormunka-qty-preset ${quantity === num ? 'selected' : ''}`}
-                  >
-                    {num} db
-                  </button>
-                ))}
-              </div>
+                case 'NOTES':
+                  return (
+                    <div className="dekormunka-notes-section">
+                      <textarea
+                        className="dekormunka-notes-textarea"
+                        placeholder={template.notesFieldPlaceholder || 'Írja ide megjegyzését...'}
+                        value={notes}
+                        onChange={(e) => setNotes(e.target.value)}
+                        rows={4}
+                      />
+                    </div>
+                  );
 
-              {quantityError && (
-                <div className="dekormunka-qty-error">{quantityError}</div>
-              )}
+                case 'FILE_UPLOAD':
+                  return (
+                    <div className="dekormunka-graphics-section">
+                      <FileUpload
+                        onChange={setUploadedFile}
+                        value={uploadedFile}
+                        helpText="Támogatott formátumok: JPG, PNG, PDF, AI, EPS, CDR (max 100 MB)"
+                      />
+                    </div>
+                  );
 
-              {/* Discount tiers info */}
-              {template.discountTiers && template.discountTiers.length > 0 && (
-                <div className="dekormunka-discount-info">
-                  <span className="dekormunka-discount-title">Mennyiségi kedvezmények:</span>
-                  <div className="dekormunka-discount-tiers">
-                    {template.discountTiers.map((tier, idx) => (
-                      <span
-                        key={idx}
-                        className={`dekormunka-discount-tier ${quantity >= tier.minQty && (!tier.maxQty || quantity <= tier.maxQty) ? 'active' : ''}`}
-                      >
-                        {tier.minQty}+ db: -{tier.discount}%
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          </CollapsibleSection>
+                default:
+                  return null;
+              }
+            };
 
-          {/* Express delivery section */}
-          {template.hasExpressOption && (
-            <CollapsibleSection
-              number={++sectionNumber}
-              title="Válassz átfutási időt!"
-              defaultOpen={true}
-            >
-              <div className="dekormunka-express-section">
-                <label className={`dekormunka-express-option ${!isExpress ? 'selected' : ''}`}>
-                  <input
-                    type="radio"
-                    name="express"
-                    checked={!isExpress}
-                    onChange={() => setIsExpress(false)}
-                  />
-                  <div className="dekormunka-express-content">
-                    <span className="dekormunka-express-label">
-                      {template.normalLabel || 'Normál'}
-                    </span>
-                    {priceResult?.normalPrice && (
-                      <span className="dekormunka-express-price">
-                        {formatPrice(priceResult.normalPrice)}
-                      </span>
-                    )}
-                  </div>
-                </label>
-
-                <label className={`dekormunka-express-option express ${isExpress ? 'selected' : ''}`}>
-                  <input
-                    type="radio"
-                    name="express"
-                    checked={isExpress}
-                    onChange={() => setIsExpress(true)}
-                  />
-                  <div className="dekormunka-express-content">
-                    <span className="dekormunka-express-label">
-                      {template.expressLabel || 'Expressz'}
-                      <span className="dekormunka-express-badge">GYORS</span>
-                    </span>
-                    {priceResult?.expressPrice && (
-                      <span className="dekormunka-express-price">
-                        {formatPrice(priceResult.expressPrice)}
-                      </span>
-                    )}
-                  </div>
-                </label>
-              </div>
-            </CollapsibleSection>
-          )}
-
-          {/* File upload section */}
-          {fieldGroups.other.some(f => f.type === 'FILE') && (
-            <CollapsibleSection
-              number={++sectionNumber}
-              title="Válassz grafikát!"
-              defaultOpen={true}
-            >
-              <div className="dekormunka-graphics-section">
-                <div className="dekormunka-graphics-options">
-                  <label className="dekormunka-graphics-option">
-                    <input type="radio" name="graphics" defaultChecked />
-                    <span>Feltöltöm most</span>
-                  </label>
-                  <label className="dekormunka-graphics-option">
-                    <input type="radio" name="graphics" />
-                    <span>grafikai tervezést kérek</span>
-                  </label>
-                  <label className="dekormunka-graphics-option">
-                    <input type="radio" name="graphics" />
-                    <span>Később töltöm fel</span>
-                  </label>
-                </div>
-
-                <FileUpload
-                  onChange={setUploadedFile}
-                  value={uploadedFile}
-                  helpText="Támogatott formátumok: JPG, PNG, PDF, AI, EPS, CDR (max 100 MB)"
-                />
-              </div>
-            </CollapsibleSection>
-          )}
-
-          {/* Notes section */}
-          {template.hasNotesField && (
-            <CollapsibleSection
-              number={++sectionNumber}
-              title={template.notesFieldLabel || "Adj meg megjegyzést!"}
-              defaultOpen={true}
-            >
-              <div className="dekormunka-notes-section">
-                <textarea
-                  className="dekormunka-notes-textarea"
-                  placeholder={template.notesFieldPlaceholder || 'Írja ide megjegyzését...'}
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  rows={4}
-                />
-              </div>
-            </CollapsibleSection>
-          )}
+            return (
+              <SectionRenderer
+                key={section.key}
+                section={section}
+                sectionNumber={sectionNumber}
+                fieldValues={fieldValues}
+                onFieldChange={handleFieldChange}
+                formatPrice={formatPrice}
+                builtInContent={section.builtInType ? getBuiltInContent() : undefined}
+              />
+            );
+          })}
         </div>
 
         {/* Right side - Summary sidebar */}
@@ -632,7 +451,33 @@ export function DekormunkaConfigurator({
             <h3 className="dekormunka-summary-title">Összegzés</h3>
 
             <div className="dekormunka-summary-list">
+              {/* Size display */}
+              {(() => {
+                const widthField = template.fields.find(f =>
+                  f.key.toLowerCase().includes('width') || f.key === 'szelesseg' || f.key === 'vizszintes'
+                );
+                const heightField = template.fields.find(f =>
+                  f.key.toLowerCase().includes('height') || f.key === 'magassag' || f.key === 'fuggoleges'
+                );
+
+                if (widthField && heightField) {
+                  const width = fieldValues[widthField.key];
+                  const height = fieldValues[heightField.key];
+                  if (width && height) {
+                    return (
+                      <div className="dekormunka-summary-item">
+                        <span className="dekormunka-summary-label">Méret:</span>
+                        <span className="dekormunka-summary-value">{width} x {height} cm</span>
+                      </div>
+                    );
+                  }
+                }
+                return null;
+              })()}
+
+              {/* Other fields (excluding size fields already shown) */}
               {template.fields
+                .filter(f => f.type !== 'NUMBER')
                 .sort((a, b) => a.order - b.order)
                 .map((field) => {
                   const displayValue = getFieldDisplayValue(field);
@@ -650,12 +495,33 @@ export function DekormunkaConfigurator({
                 <span className="dekormunka-summary-value">{quantity} db</span>
               </div>
 
+              {/* m² calculation */}
+              {(() => {
+                const sqm = calculateSquareMeters();
+                if (sqm !== null && sqm > 0) {
+                  return (
+                    <div className="dekormunka-summary-item">
+                      <span className="dekormunka-summary-label">m²:</span>
+                      <span className="dekormunka-summary-value">{sqm.toFixed(2)} m²</span>
+                    </div>
+                  );
+                }
+                return null;
+              })()}
+
               {template.hasExpressOption && (
                 <div className="dekormunka-summary-item">
                   <span className="dekormunka-summary-label">Átfutási idő:</span>
                   <span className="dekormunka-summary-value">
                     {isExpress ? (template.expressLabel || 'Expressz') : (template.normalLabel || 'Normál')}
                   </span>
+                </div>
+              )}
+
+              {uploadedFile && (
+                <div className="dekormunka-summary-item">
+                  <span className="dekormunka-summary-label">Grafika:</span>
+                  <span className="dekormunka-summary-value">{uploadedFile.name}</span>
                 </div>
               )}
 

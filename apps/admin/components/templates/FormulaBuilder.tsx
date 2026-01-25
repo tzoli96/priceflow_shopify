@@ -35,8 +35,30 @@ export const FormulaBuilder: React.FC<FormulaBuilderProps> = ({
   const [cursorPosition, setCursorPosition] = useState<number>(0);
   const textFieldRef = React.useRef<HTMLInputElement>(null);
 
-  // Filter NUMBER fields for formula (only numeric fields can be used in calculations)
+  // Filter fields that can be used in formula
+  // NUMBER: direct numeric value
+  // PRODUCT_CARD, DELIVERY_TIME, EXTRAS: option price (with _price suffix)
+  // SELECT, RADIO: option price if any option has a price
   const formulaFields = fields.filter(field => field.type === 'NUMBER');
+
+  // Fields with price options (these will have _price suffix in formula)
+  const priceOptionFields = fields.filter(field => {
+    // Always include these types
+    if (
+      field.type === 'PRODUCT_CARD' ||
+      field.type === 'DELIVERY_TIME' ||
+      field.type === 'EXTRAS'
+    ) {
+      return true;
+    }
+
+    // Include SELECT/RADIO only if any option has a price
+    if (field.type === 'SELECT' || field.type === 'RADIO') {
+      return field.options?.some(opt => opt.price !== undefined && opt.price > 0);
+    }
+
+    return false;
+  });
 
   const insertAtCursor = (text: string) => {
     const textarea = textFieldRef.current?.querySelector('textarea');
@@ -106,23 +128,54 @@ export const FormulaBuilder: React.FC<FormulaBuilderProps> = ({
 
           <Divider />
 
-          {/* User-defined Fields */}
+          {/* User-defined NUMBER Fields */}
           <BlockStack gap="200">
             <Text as="p" variant="bodySm" fontWeight="semibold">
-              Saját mezők:
+              Szám mezők:
             </Text>
             {formulaFields.length > 0 ? (
-              <>
+              <InlineStack gap="200" wrap>
+                {formulaFields.map((field) => (
+                  <Button
+                    key={field.key}
+                    size="slim"
+                    onClick={() => handleFieldClick(field.key)}
+                    tone="success"
+                  >
+                    {field.key}
+                    {field.label && field.label !== field.key && (
+                      <span style={{ marginLeft: '4px', opacity: 0.7 }}>
+                        ({field.label})
+                      </span>
+                    )}
+                  </Button>
+                ))}
+              </InlineStack>
+            ) : (
+              <Text as="p" variant="bodySm" tone="subdued">
+                Nincs NUMBER típusú mező.
+              </Text>
+            )}
+          </BlockStack>
+
+          {/* Price Option Fields (PRODUCT_CARD, DELIVERY_TIME, EXTRAS) */}
+          {priceOptionFields.length > 0 && (
+            <>
+              <Divider />
+              <BlockStack gap="200">
+                <Text as="p" variant="bodySm" fontWeight="semibold">
+                  Áras opciók (kiválasztott opció ára):
+                </Text>
                 <InlineStack gap="200" wrap>
-                  {formulaFields.map((field) => (
+                  {priceOptionFields.map((field) => (
                     <Button
                       key={field.key}
                       size="slim"
-                      onClick={() => handleFieldClick(field.key)}
-                      tone="success"
+                      onClick={() => handleFieldClick(`${field.key}_price`)}
+                      tone="warning"
                     >
-                      {field.key}
-                      {field.label && field.label !== field.key && (
+                      {field.key}_price
+                      {field.label && (
                         <span style={{ marginLeft: '4px', opacity: 0.7 }}>
                           ({field.label})
                         </span>
@@ -130,20 +183,12 @@ export const FormulaBuilder: React.FC<FormulaBuilderProps> = ({
                     </Button>
                   ))}
                 </InlineStack>
-                {fields.length > formulaFields.length && (
-                  <Text as="p" variant="bodySm" tone="subdued">
-                    {fields.length - formulaFields.length} nem-számszerű mező nem használható a képletben
-                  </Text>
-                )}
-              </>
-            ) : (
-              <Text as="p" variant="bodySm" tone="subdued">
-                {fields.length === 0
-                  ? 'Adj hozzá NUMBER típusú mezőket a "Mezők konfigurációja" szekcióban.'
-                  : 'Nincs NUMBER típusú mező a képlethez.'}
-              </Text>
-            )}
-          </BlockStack>
+                <Text as="p" variant="bodySm" tone="subdued">
+                  Ezek a mezők a kiválasztott opció árát adják vissza (EXTRAS esetén az összes kiválasztott ára összegét).
+                </Text>
+              </BlockStack>
+            </>
+          )}
         </BlockStack>
       </Card>
 

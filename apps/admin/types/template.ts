@@ -20,18 +20,26 @@ export enum FieldType {
   CHECKBOX = 'CHECKBOX',
   TEXTAREA = 'TEXTAREA',
   FILE = 'FILE',
+  PRODUCT_CARD = 'PRODUCT_CARD', // Gazdag termék/anyag választó kártyákkal
+  DELIVERY_TIME = 'DELIVERY_TIME', // Átfutási idő választó (név, leírás, ár)
+  EXTRAS = 'EXTRAS', // Extrák választó (kép, cím, leírás, ár) - több választható
+  GRAPHIC_SELECT = 'GRAPHIC_SELECT', // Grafika választó (feltöltöm / tervezést kérek)
 }
 
 /**
- * Opció típus SELECT/RADIO mezőkhöz árral és képpel
+ * Opció típus SELECT/RADIO/PRODUCT_CARD mezőkhöz
  */
 export interface FieldOption {
   label: string;
   value: string;
   price?: number; // Felár, ha van
-  imageUrl?: string; // Kép URL (S3 vagy külső)
+  imageUrl?: string; // Fő kép URL (S3 vagy külső)
+  patternUrl?: string; // Minta/textúra kép URL (PRODUCT_CARD)
+  badge?: string; // Címke/badge pl. "Legnépszerűbb" (PRODUCT_CARD)
   description?: string; // Hosszabb leírás
+  htmlContent?: string; // HTML formázott tartalom (PRODUCT_CARD)
   features?: string[]; // Felsorolás pontok (bullet points)
+  enableUpload?: boolean; // GRAPHIC_SELECT: Ha true, fájlfeltöltő jelenik meg storefront-on
 }
 
 /**
@@ -41,6 +49,55 @@ export interface FieldOption {
  * - chip: Gyorsgombok (chips)
  */
 export type FieldDisplayStyle = 'default' | 'card' | 'chip';
+
+/**
+ * Szekció layout típusok
+ * - VERTICAL: Mezők egymás alatt (alapértelmezett)
+ * - HORIZONTAL: Mezők egymás mellett
+ * - GRID: Kártya rács (SELECT/RADIO card megjelenítés)
+ * - SPLIT: Bal: inputok, Jobb: presetek (méret választó)
+ * - CHECKBOX_LIST: Checkbox kártyák leírással (extrák)
+ */
+export type LayoutType =
+  | 'VERTICAL'
+  | 'HORIZONTAL'
+  | 'GRID'
+  | 'SPLIT'
+  | 'CHECKBOX_LIST';
+
+/**
+ * Built-in szekció típusok
+ * - SIZE: Méret választó (width/height)
+ * - QUANTITY: Mennyiség választó
+ * - EXPRESS: Expressz/normál választó
+ * - NOTES: Megjegyzés mező
+ * - FILE_UPLOAD: Fájl feltöltés
+ */
+export type BuiltInSectionType =
+  | 'SIZE'
+  | 'QUANTITY'
+  | 'EXPRESS'
+  | 'NOTES'
+  | 'FILE_UPLOAD';
+
+/**
+ * Template szekció
+ */
+export interface TemplateSection {
+  id?: string;
+  key: string;
+  title: string;
+  description?: string;
+  layoutType: LayoutType;
+  columnsCount?: number; // GRID esetén: 2, 3, 4
+  collapsible: boolean;
+  defaultOpen: boolean;
+  showNumber: boolean;
+  order: number;
+  builtInType?: BuiltInSectionType;
+  fields: TemplateField[];
+  presets?: PresetValue[]; // SPLIT layout esetén: gyors értékválasztók
+}
 
 /**
  * Előre definiált érték (gyorsgombok)
@@ -97,6 +154,8 @@ export interface TemplateField {
   order: number; // Megjelenítési sorrend
   displayStyle?: FieldDisplayStyle; // Megjelenítési stílus (default/card/chip)
   presetValues?: PresetValue[]; // Előre definiált értékek (gyorsgombok)
+  unit?: string; // Mértékegység (pl. "cm", "db", "m²") - NUMBER mezőhöz
+  iconUrl?: string; // Ikon URL a label mellett
 }
 
 /**
@@ -125,6 +184,9 @@ export interface Template {
   updatedAt: string;
   fields: TemplateField[];
 
+  // Szekciók (új rendszer)
+  sections?: TemplateSection[];
+
   // Min/Max rendelési mennyiség
   minQuantity?: number;
   maxQuantity?: number;
@@ -144,6 +206,9 @@ export interface Template {
   hasNotesField?: boolean;
   notesFieldLabel?: string; // "Megjegyzés"
   notesFieldPlaceholder?: string; // "Írja ide az egyedi kéréseit..."
+
+  // Mennyiség gyorsgombok
+  quantityPresets?: (number | { label: string; value: number })[];
 }
 
 export interface CreateTemplateDto {
@@ -153,6 +218,7 @@ export interface CreateTemplateDto {
   scopeType?: ScopeType;
   scopeValues?: string[];
   fields: Omit<TemplateField, 'id'>[];
+  sections?: Omit<TemplateSection, 'id'>[];
 
   // Opcionális mezők
   minQuantity?: number;
@@ -160,10 +226,6 @@ export interface CreateTemplateDto {
   minQuantityMessage?: string;
   maxQuantityMessage?: string;
   discountTiers?: DiscountTier[];
-  hasExpressOption?: boolean;
-  expressMultiplier?: number;
-  expressLabel?: string;
-  normalLabel?: string;
 
   // Megjegyzés mező
   hasNotesField?: boolean;
@@ -178,6 +240,7 @@ export interface UpdateTemplateDto {
   scopeType?: ScopeType;
   scopeValues?: string[];
   fields?: Omit<TemplateField, 'id'>[];
+  sections?: Omit<TemplateSection, 'id'>[];
 
   // Opcionális mezők
   minQuantity?: number | null;
@@ -185,10 +248,6 @@ export interface UpdateTemplateDto {
   minQuantityMessage?: string | null;
   maxQuantityMessage?: string | null;
   discountTiers?: DiscountTier[] | null;
-  hasExpressOption?: boolean;
-  expressMultiplier?: number | null;
-  expressLabel?: string | null;
-  normalLabel?: string | null;
 
   // Megjegyzés mező
   hasNotesField?: boolean;

@@ -5,7 +5,7 @@
   The widget communicates with the parent page via postMessage.
 {% endcomment %}
 
-{% assign widget_url = block.settings.widget_url | default: "https://app.teszt.uk" %}
+{% assign widget_url = block.settings.widget_url | default: "https://app.teszt.uk/storefront" %}
 {% assign variant_id = product.selected_or_first_available_variant.id %}
 
 <div
@@ -51,13 +51,16 @@
 
 <style>
   .priceflow-widget {
-    margin: 20px 0;
+    width: 100vw;
+    margin-top: 20px;
+    margin-bottom: 20px;
   }
 
   .priceflow-widget iframe {
     display: block;
-    max-width: 100%;
+    width: 100%;
     min-height: 300px;
+    border: none;
   }
 </style>
 
@@ -70,7 +73,7 @@
       "type": "text",
       "id": "widget_url",
       "label": "Widget URL",
-      "default": "https://app.teszt.uk",
+      "default": "https://app.teszt.uk/storefront",
       "info": "A PriceFlow storefront app URL-je"
     },
     {

@@ -10,6 +10,43 @@ until curl -s http://localstack:4566/_localstack/health | grep -qE '"secretsmana
   sleep 2
 done
 
+echo "Waiting for LocalStack S3 to be ready..."
+
+# Wait for S3 to be ready
+until curl -s http://localstack:4566/_localstack/health | grep -qE '"s3": "(available|running)"' 2>/dev/null; do
+  echo "Waiting for S3..."
+  sleep 2
+done
+
+# Create S3 bucket for uploads
+echo "Creating S3 bucket: priceflow-uploads..."
+aws --endpoint-url=http://localstack:4566 \
+    --region eu-central-1 \
+    --no-verify-ssl \
+    s3 mb s3://priceflow-uploads 2>/dev/null || echo "Bucket already exists or error"
+
+# Set bucket policy to allow public read for images
+echo "Setting bucket policy for public read access..."
+aws --endpoint-url=http://localstack:4566 \
+    --region eu-central-1 \
+    --no-verify-ssl \
+    s3api put-bucket-policy \
+    --bucket priceflow-uploads \
+    --policy '{
+      "Version": "2012-10-17",
+      "Statement": [
+        {
+          "Sid": "PublicReadGetObject",
+          "Effect": "Allow",
+          "Principal": "*",
+          "Action": "s3:GetObject",
+          "Resource": "arn:aws:s3:::priceflow-uploads/*"
+        }
+      ]
+    }' 2>/dev/null || echo "Policy already set or error"
+
+echo "✓ S3 bucket created and configured"
+
 echo "LocalStack is ready. Importing secrets from .env file..."
 
 ENV_FILE="${ENV_FILE:-/app/.env}"

@@ -16,6 +16,26 @@ import { Type } from 'class-transformer';
 import { ScopeType, FieldType } from '@prisma/client';
 
 /**
+ * Layout típusok
+ */
+export type LayoutType =
+  | 'VERTICAL'
+  | 'HORIZONTAL'
+  | 'GRID'
+  | 'SPLIT'
+  | 'CHECKBOX_LIST';
+
+/**
+ * Built-in szekció típusok
+ */
+export type BuiltInSectionType =
+  | 'SIZE'
+  | 'QUANTITY'
+  | 'EXPRESS'
+  | 'NOTES'
+  | 'FILE_UPLOAD';
+
+/**
  * Sávos kedvezmény DTO
  */
 export class DiscountTierDto {
@@ -31,6 +51,68 @@ export class DiscountTierDto {
   @Min(0)
   @Max(100)
   discount: number;
+}
+
+/**
+ * Template Section DTO
+ *
+ * Szekció létrehozásához szükséges adatok
+ */
+export class CreateTemplateSectionDto {
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(100)
+  key: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(255)
+  title: string;
+
+  @IsString()
+  @IsOptional()
+  description?: string;
+
+  @IsString()
+  @IsOptional()
+  layoutType?: LayoutType = 'VERTICAL';
+
+  @IsNumber()
+  @IsOptional()
+  @Min(1)
+  @Max(6)
+  columnsCount?: number;
+
+  @IsBoolean()
+  @IsOptional()
+  collapsible?: boolean = true;
+
+  @IsBoolean()
+  @IsOptional()
+  defaultOpen?: boolean = true;
+
+  @IsBoolean()
+  @IsOptional()
+  showNumber?: boolean = true;
+
+  @IsNumber()
+  @IsOptional()
+  @Min(0)
+  order?: number = 0;
+
+  @IsString()
+  @IsOptional()
+  builtInType?: BuiltInSectionType;
+
+  @IsArray()
+  @IsOptional()
+  presets?: { label: string; value: number | string | Record<string, number> }[];
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreateTemplateFieldDto)
+  @IsOptional()
+  fields?: CreateTemplateFieldDto[] = [];
 }
 
 /**
@@ -168,6 +250,13 @@ export class CreateTemplateDto {
   @IsOptional()
   fields?: CreateTemplateFieldDto[] = [];
 
+  // Szekciók (új rendszer)
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreateTemplateSectionDto)
+  @IsOptional()
+  sections?: CreateTemplateSectionDto[] = [];
+
   // Min/Max rendelési mennyiség
   @IsNumber()
   @IsOptional()
@@ -195,27 +284,6 @@ export class CreateTemplateDto {
   @Type(() => DiscountTierDto)
   @IsOptional()
   discountTiers?: DiscountTierDto[];
-
-  // Expressz gyártás
-  @IsBoolean()
-  @IsOptional()
-  hasExpressOption?: boolean;
-
-  @IsNumber()
-  @IsOptional()
-  @Min(1)
-  @Max(10)
-  expressMultiplier?: number;
-
-  @IsString()
-  @IsOptional()
-  @MaxLength(255)
-  expressLabel?: string;
-
-  @IsString()
-  @IsOptional()
-  @MaxLength(255)
-  normalLabel?: string;
 
   // Megjegyzés mező
   @IsBoolean()

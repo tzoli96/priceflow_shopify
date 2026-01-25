@@ -1,20 +1,20 @@
 /**
- * FieldsList - Manage template fields
+ * FieldsList - Manage template fields with drag & drop reordering
  */
 
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
-  Card,
-  ResourceList,
-  ResourceItem,
   Text,
   Button,
   InlineStack,
   Badge,
   EmptyState,
+  BlockStack,
+  Box,
 } from '@shopify/polaris';
+import { DragHandleIcon } from '@shopify/polaris-icons';
 import { FieldEditor } from './FieldEditor';
 import type { TemplateField, FieldType, FieldDisplayStyle } from '@/types/template';
 
@@ -27,6 +27,8 @@ export const FieldsList: React.FC<FieldsListProps> = ({ fields, onChange }) => {
   const [editingField, setEditingField] = useState<TemplateField | null>(null);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [showEditor, setShowEditor] = useState(false);
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 
   const getFieldTypeLabel = (type: FieldType): string => {
     switch (type) {
@@ -44,6 +46,12 @@ export const FieldsList: React.FC<FieldsListProps> = ({ fields, onChange }) => {
         return 'Szövegterület';
       case 'FILE':
         return 'Fájl';
+      case 'PRODUCT_CARD':
+        return 'Termék kártya';
+      case 'DELIVERY_TIME':
+        return 'Átfutási idő';
+      case 'EXTRAS':
+        return 'Extrák';
       default:
         return type;
     }
@@ -83,12 +91,55 @@ export const FieldsList: React.FC<FieldsListProps> = ({ fields, onChange }) => {
       updatedFields[editingIndex] = field;
       onChange(updatedFields);
     } else {
-      // Add new field
-      onChange([...fields, field]);
+      // Add new field with order
+      const newField = { ...field, order: fields.length };
+      onChange([...fields, newField]);
     }
     setShowEditor(false);
     setEditingField(null);
     setEditingIndex(null);
+  };
+
+  // Drag & Drop handlers
+  const handleDragStart = (e: React.DragEvent, index: number) => {
+    setDraggedIndex(index);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', index.toString());
+  };
+
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setDragOverIndex(index);
+  };
+
+  const handleDragLeave = () => {
+    setDragOverIndex(null);
+  };
+
+  const handleDrop = (e: React.DragEvent, dropIndex: number) => {
+    e.preventDefault();
+    if (draggedIndex === null || draggedIndex === dropIndex) {
+      setDraggedIndex(null);
+      setDragOverIndex(null);
+      return;
+    }
+
+    const newFields = [...fields];
+    const [draggedField] = newFields.splice(draggedIndex, 1);
+    newFields.splice(dropIndex, 0, draggedField);
+
+    // Update order values
+    const reorderedFields = newFields.map((f, i) => ({ ...f, order: i }));
+    onChange(reorderedFields);
+
+    setDraggedIndex(null);
+    setDragOverIndex(null);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedIndex(null);
+    setDragOverIndex(null);
   };
 
   if (fields.length === 0) {
@@ -133,19 +184,42 @@ export const FieldsList: React.FC<FieldsListProps> = ({ fields, onChange }) => {
         </InlineStack>
       </div>
 
-      <ResourceList
-        resourceName={{ singular: 'mező', plural: 'mezők' }}
-        items={fields}
-        renderItem={(field, _, index) => {
+      <BlockStack gap="200">
+        {fields.map((field, index) => {
           const displayStyleLabel = getDisplayStyleLabel(field.displayStyle);
           const hasPresets = field.presetValues && field.presetValues.length > 0;
           const hasOptions = field.options && field.options.length > 0;
+          const isDragging = draggedIndex === index;
+          const isDragOver = dragOverIndex === index;
 
           return (
-            <ResourceItem id={field.key}>
-              <InlineStack align="space-between">
-                <InlineStack gap="300" wrap={false}>
-                  <Text variant="bodyMd" fontWeight="medium">
+            <div
+              key={field.key}
+              draggable
+              onDragStart={(e) => handleDragStart(e, index)}
+              onDragOver={(e) => handleDragOver(e, index)}
+              onDragLeave={handleDragLeave}
+              onDrop={(e) => handleDrop(e, index)}
+              onDragEnd={handleDragEnd}
+              style={{
+                padding: '12px 16px',
+                backgroundColor: isDragOver ? '#f0f5ff' : isDragging ? '#f4f6f8' : '#fff',
+                border: `1px solid ${isDragOver ? '#2c6ecb' : '#e1e3e5'}`,
+                borderRadius: '8px',
+                cursor: 'grab',
+                opacity: isDragging ? 0.5 : 1,
+                transition: 'all 0.15s ease',
+              }}
+            >
+              <InlineStack align="space-between" blockAlign="center">
+                <InlineStack gap="300" wrap={false} blockAlign="center">
+                  {/* Drag handle */}
+                  <div style={{ color: '#8c9196', cursor: 'grab' }}>
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                      <path d="M7 2a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM7 8a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM7 14a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM13 2a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM13 8a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM13 14a2 2 0 1 0 0 4 2 2 0 0 0 0-4z"/>
+                    </svg>
+                  </div>
+                  <Text variant="bodyMd" fontWeight="medium" as="span">
                     {field.label}
                   </Text>
                   <Badge tone="info">{getFieldTypeLabel(field.type)}</Badge>
@@ -157,17 +231,14 @@ export const FieldsList: React.FC<FieldsListProps> = ({ fields, onChange }) => {
                   {field.useInFormula === false && (
                     <Badge>Nincs árhatás</Badge>
                   )}
-                  {/* Display style badge for SELECT/RADIO */}
                   {displayStyleLabel && (
                     <Badge tone="warning">{displayStyleLabel}</Badge>
                   )}
-                  {/* Options count for SELECT/RADIO */}
                   {hasOptions && (
-                    <Badge>{field.options!.length} opció</Badge>
+                    <Badge>{String(field.options!.length)} opció</Badge>
                   )}
-                  {/* Preset values for NUMBER */}
                   {hasPresets && (
-                    <Badge tone="success">{field.presetValues!.length} gyors érték</Badge>
+                    <Badge tone="success">{String(field.presetValues!.length)} gyors érték</Badge>
                   )}
                   {field.helpText && <Badge tone="info">Segítség</Badge>}
                 </InlineStack>
@@ -181,10 +252,10 @@ export const FieldsList: React.FC<FieldsListProps> = ({ fields, onChange }) => {
                   </Button>
                 </InlineStack>
               </InlineStack>
-            </ResourceItem>
+            </div>
           );
-        }}
-      />
+        })}
+      </BlockStack>
 
       {showEditor && (
         <FieldEditor

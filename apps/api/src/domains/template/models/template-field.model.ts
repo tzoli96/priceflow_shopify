@@ -37,6 +37,8 @@ export class TemplateFieldModel {
     public order: number,
     public readonly createdAt: Date,
     public readonly updatedAt: Date,
+    public displayStyle: string | null = null,
+    public presetValues: any | null = null,
   ) {}
 
   /**
@@ -124,6 +126,8 @@ export class TemplateFieldModel {
       prismaField.order,
       prismaField.createdAt,
       prismaField.updatedAt,
+      prismaField.displayStyle,
+      prismaField.presetValues,
     );
   }
 
@@ -148,6 +152,8 @@ export class TemplateFieldModel {
       order: this.order,
       createdAt: this.createdAt,
       updatedAt: this.updatedAt,
+      displayStyle: this.displayStyle,
+      presetValues: this.presetValues,
     };
   }
 

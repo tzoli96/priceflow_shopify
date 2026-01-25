@@ -38,6 +38,18 @@ export class TemplateRepository implements ITemplateRepository {
             order: 'asc', // Field-ek rendezve order szerint
           },
         },
+        sections: {
+          orderBy: {
+            order: 'asc',
+          },
+          include: {
+            fields: {
+              orderBy: {
+                order: 'asc',
+              },
+            },
+          },
+        },
       },
     });
 
@@ -72,6 +84,18 @@ export class TemplateRepository implements ITemplateRepository {
             order: 'asc',
           },
         },
+        sections: {
+          orderBy: {
+            order: 'asc',
+          },
+          include: {
+            fields: {
+              orderBy: {
+                order: 'asc',
+              },
+            },
+          },
+        },
       },
       orderBy: {
         createdAt: 'desc',
@@ -99,15 +123,17 @@ export class TemplateRepository implements ITemplateRepository {
   }
 
   /**
-   * Új template mentése (field-ekkel együtt)
+   * Új template mentése (field-ekkel és szekciókkal együtt)
    *
    * Transaction:
    * 1. Template INSERT
    * 2. Field-ek INSERT (batch)
+   * 3. Szekciók INSERT (batch) + szekció field-ek
    *
    * SQL Queries:
    * INSERT INTO templates (...) VALUES (...) RETURNING *
    * INSERT INTO template_fields (...) VALUES (...), (...), ...
+   * INSERT INTO template_sections (...) VALUES (...), (...), ...
    */
   async save(template: TemplateModel): Promise<TemplateModel> {
     const created = await this.prisma.template.create({
@@ -119,11 +145,37 @@ export class TemplateRepository implements ITemplateRepository {
             return fieldData;
           }),
         },
+        sections: {
+          create: template.sections.map((s) => {
+            const { templateId, id, createdAt, updatedAt, fields, ...sectionData } = s.toPersistence();
+            return {
+              ...sectionData,
+              fields: {
+                create: s.fields.map((f) => {
+                  const { templateId, sectionId, id, createdAt, updatedAt, ...fieldData } = f.toPersistence();
+                  return fieldData;
+                }),
+              },
+            };
+          }),
+        },
       },
       include: {
         fields: {
           orderBy: {
             order: 'asc',
+          },
+        },
+        sections: {
+          orderBy: {
+            order: 'asc',
+          },
+          include: {
+            fields: {
+              orderBy: {
+                order: 'asc',
+              },
+            },
           },
         },
       },
@@ -133,29 +185,40 @@ export class TemplateRepository implements ITemplateRepository {
   }
 
   /**
-   * Template frissítése (field-ekkel együtt)
+   * Template frissítése (field-ekkel és szekciókkal együtt)
    *
    * Stratégia:
-   * 1. Régi field-ek törlése
-   * 2. Template UPDATE
-   * 3. Új field-ek INSERT
+   * 1. Régi field-ek törlése (szekción kívüliek)
+   * 2. Régi szekciók törlése (cascade törli a szekció field-eket)
+   * 3. Template UPDATE
+   * 4. Új field-ek és szekciók INSERT
    *
    * Transaction:
-   * DELETE FROM template_fields WHERE template_id = ?
+   * DELETE FROM template_fields WHERE template_id = ? AND section_id IS NULL
+   * DELETE FROM template_sections WHERE template_id = ?
    * UPDATE templates SET ... WHERE id = ?
    * INSERT INTO template_fields (...) VALUES (...), (...)
+   * INSERT INTO template_sections (...) VALUES (...), (...)
    */
   async update(template: TemplateModel): Promise<TemplateModel> {
-    // Transaction: delete old fields, update template, create new fields
+    // Transaction: delete old data, update template, create new data
     const updated = await this.prisma.$transaction(async (tx) => {
-      // Delete old fields
+      // Delete old fields (only those not in sections)
       await tx.templateField.deleteMany({
+        where: {
+          templateId: template.id,
+          sectionId: null,
+        },
+      });
+
+      // Delete old sections (cascade deletes section fields)
+      await tx.templateSection.deleteMany({
         where: {
           templateId: template.id,
         },
       });
 
-      // Update template and create new fields
+      // Update template and create new fields/sections
       return tx.template.update({
         where: {
           id: template.id,
@@ -168,11 +231,37 @@ export class TemplateRepository implements ITemplateRepository {
               return fieldData;
             }),
           },
+          sections: {
+            create: template.sections.map((s) => {
+              const { templateId, id, createdAt, updatedAt, fields, ...sectionData } = s.toPersistence();
+              return {
+                ...sectionData,
+                fields: {
+                  create: s.fields.map((f) => {
+                    const { templateId, sectionId, id, createdAt, updatedAt, ...fieldData } = f.toPersistence();
+                    return fieldData;
+                  }),
+                },
+              };
+            }),
+          },
         },
         include: {
           fields: {
             orderBy: {
               order: 'asc',
+            },
+          },
+          sections: {
+            orderBy: {
+              order: 'asc',
+            },
+            include: {
+              fields: {
+                orderBy: {
+                  order: 'asc',
+                },
+              },
             },
           },
         },

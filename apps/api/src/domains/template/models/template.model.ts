@@ -1,5 +1,6 @@
 import { ScopeType } from '@prisma/client';
 import { TemplateFieldModel } from './template-field.model';
+import { TemplateSectionModel } from './template-section.model';
 
 /**
  * Sávos kedvezmény típus
@@ -27,6 +28,11 @@ export interface DiscountTier {
  *
  * Prisma entitásra történő konverzió (toPersistence/fromPersistence pattern)
  */
+/**
+ * Mennyiség preset típus
+ */
+export type QuantityPreset = number | { label: string; value: number };
+
 export class TemplateModel {
   constructor(
     public readonly id: string,
@@ -41,6 +47,8 @@ export class TemplateModel {
     public readonly createdAt: Date,
     public readonly updatedAt: Date,
     public fields: TemplateFieldModel[] = [],
+    // Szekciók (új rendszer)
+    public sections: TemplateSectionModel[] = [],
     // Új mezők
     public minQuantity: number | null = null,
     public maxQuantity: number | null = null,
@@ -51,6 +59,12 @@ export class TemplateModel {
     public expressMultiplier: number | null = null,
     public expressLabel: string | null = null,
     public normalLabel: string | null = null,
+    // Megjegyzés mező
+    public hasNotesField: boolean = false,
+    public notesFieldLabel: string | null = null,
+    public notesFieldPlaceholder: string | null = null,
+    // Mennyiség presetek
+    public quantityPresets: QuantityPreset[] | null = null,
   ) {}
 
   /**
@@ -78,6 +92,7 @@ export class TemplateModel {
     scopeType: ScopeType,
     scopeValues: string[],
     fields: TemplateFieldModel[] = [],
+    sections: TemplateSectionModel[] = [],
   ): TemplateModel {
     // Validációk
     if (!name || name.trim().length === 0) {
@@ -107,6 +122,7 @@ export class TemplateModel {
       now,
       now,
       fields,
+      sections,
     );
   }
 
@@ -119,6 +135,10 @@ export class TemplateModel {
   static fromPersistence(prismaTemplate: any): TemplateModel {
     const fields = prismaTemplate.fields
       ? prismaTemplate.fields.map((f: any) => TemplateFieldModel.fromPersistence(f))
+      : [];
+
+    const sections = prismaTemplate.sections
+      ? prismaTemplate.sections.map((s: any) => TemplateSectionModel.fromPersistence(s))
       : [];
 
     return new TemplateModel(
@@ -134,6 +154,8 @@ export class TemplateModel {
       prismaTemplate.createdAt,
       prismaTemplate.updatedAt,
       fields,
+      // Szekciók
+      sections,
       // Új mezők
       prismaTemplate.minQuantity,
       prismaTemplate.maxQuantity,
@@ -146,6 +168,12 @@ export class TemplateModel {
         : null,
       prismaTemplate.expressLabel,
       prismaTemplate.normalLabel,
+      // Megjegyzés mező
+      prismaTemplate.hasNotesField ?? false,
+      prismaTemplate.notesFieldLabel,
+      prismaTemplate.notesFieldPlaceholder,
+      // Mennyiség presetek
+      prismaTemplate.quantityPresets as QuantityPreset[] | null,
     );
   }
 
@@ -177,6 +205,12 @@ export class TemplateModel {
       expressMultiplier: this.expressMultiplier,
       expressLabel: this.expressLabel,
       normalLabel: this.normalLabel,
+      // Megjegyzés mező
+      hasNotesField: this.hasNotesField,
+      notesFieldLabel: this.notesFieldLabel,
+      notesFieldPlaceholder: this.notesFieldPlaceholder,
+      // Mennyiség presetek
+      quantityPresets: this.quantityPresets,
     };
   }
 

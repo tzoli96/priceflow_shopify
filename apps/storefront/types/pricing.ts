@@ -13,17 +13,23 @@ export type FieldType =
   | 'RADIO'
   | 'CHECKBOX'
   | 'TEXTAREA'
-  | 'FILE';
+  | 'FILE'
+  | 'PRODUCT_CARD' // Gazdag termék/anyag választó kártyákkal
+  | 'DELIVERY_TIME' // Átfutási idő választó (név, leírás, ár)
+  | 'EXTRAS'; // Extrák választó (kép, cím, leírás, ár) - több választható
 
 /**
- * Field option for SELECT/RADIO fields
+ * Field option for SELECT/RADIO/PRODUCT_CARD fields
  */
 export interface FieldOption {
   value: string;
   label: string;
   price?: number;
-  imageUrl?: string; // Kép URL (S3 vagy külső)
+  imageUrl?: string; // Fő kép URL (S3 vagy külső)
+  patternUrl?: string; // Minta/textúra kép URL (PRODUCT_CARD)
+  badge?: string; // Címke/badge pl. "Legnépszerűbb" (PRODUCT_CARD)
   description?: string; // Hosszabb leírás
+  htmlContent?: string; // HTML formázott tartalom (PRODUCT_CARD)
   features?: string[]; // Felsorolás pontok (bullet points)
 }
 
@@ -31,6 +37,50 @@ export interface FieldOption {
  * Mező megjelenítési stílus
  */
 export type FieldDisplayStyle = 'default' | 'card' | 'chip';
+
+/**
+ * Szekció layout típusok
+ * - VERTICAL: Mezők egymás alatt (alapértelmezett)
+ * - HORIZONTAL: Mezők egymás mellett
+ * - GRID: Kártya rács (SELECT/RADIO card megjelenítés)
+ * - SPLIT: Bal: inputok, Jobb: presetek (méret választó)
+ * - CHECKBOX_LIST: Checkbox kártyák leírással (extrák)
+ */
+export type LayoutType =
+  | 'VERTICAL'
+  | 'HORIZONTAL'
+  | 'GRID'
+  | 'SPLIT'
+  | 'CHECKBOX_LIST';
+
+/**
+ * Built-in szekció típusok
+ */
+export type BuiltInSectionType =
+  | 'SIZE'
+  | 'QUANTITY'
+  | 'EXPRESS'
+  | 'NOTES'
+  | 'FILE_UPLOAD';
+
+/**
+ * Template szekció
+ */
+export interface TemplateSection {
+  id?: string;
+  key: string;
+  title: string;
+  description?: string;
+  layoutType: LayoutType;
+  columnsCount?: number;
+  collapsible: boolean;
+  defaultOpen: boolean;
+  showNumber: boolean;
+  order: number;
+  builtInType?: BuiltInSectionType;
+  fields: TemplateField[];
+  presets?: PresetValue[]; // SPLIT layout: gyors értékválasztók
+}
 
 /**
  * Előre definiált érték (gyorsgombok)
@@ -68,6 +118,8 @@ export interface TemplateField {
   order: number;
   displayStyle?: FieldDisplayStyle; // Megjelenítési stílus
   presetValues?: PresetValue[]; // Előre definiált értékek (gyorsgombok)
+  unit?: string; // Mértékegység (pl. "cm") - NUMBER mezőhöz
+  iconUrl?: string; // Ikon URL a label mellett
 }
 
 /**
@@ -90,6 +142,11 @@ export interface DiscountTier {
 }
 
 /**
+ * Quantity preset type
+ */
+export type QuantityPreset = number | { label: string; value: number };
+
+/**
  * Product template info from API
  */
 export interface ProductTemplateInfo {
@@ -99,6 +156,8 @@ export interface ProductTemplateInfo {
     name: string;
     description?: string;
     fields: TemplateField[];
+    // Szekciók (új rendszer)
+    sections?: TemplateSection[];
     // Express option
     hasExpressOption: boolean;
     expressMultiplier?: number;
@@ -112,6 +171,8 @@ export interface ProductTemplateInfo {
     hasNotesField?: boolean;
     notesFieldLabel?: string;
     notesFieldPlaceholder?: string;
+    // Quantity presets
+    quantityPresets?: QuantityPreset[];
   };
 }
 

@@ -29,6 +29,7 @@ import {
 import { PlusIcon, DeleteIcon } from '@shopify/polaris-icons';
 import type { TemplateField, FieldType, FieldOption, FieldDisplayStyle, PresetValue } from '@/types/template';
 import { FIELD_TYPE_OPTIONS } from '@/lib/constants/template';
+import { ImageUploader } from '@/components/common/ImageUploader';
 
 const DISPLAY_STYLE_OPTIONS = [
   { label: 'Alapértelmezett', value: 'default' },
@@ -57,8 +58,12 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({
       return field.options.map(opt => ({
         ...opt,
         imageUrl: opt.imageUrl || '',
+        patternUrl: opt.patternUrl || '',
+        badge: opt.badge || '',
         description: opt.description || '',
+        htmlContent: opt.htmlContent || '',
         features: opt.features || [],
+        enableUpload: opt.enableUpload || false,
       }));
     }
     // Legacy format: validation.options string array
@@ -68,8 +73,12 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({
         value: opt.toLowerCase().replace(/[^a-z0-9]+/g, '_'),
         price: undefined,
         imageUrl: '',
+        patternUrl: '',
+        badge: '',
         description: '',
+        htmlContent: '',
         features: [],
+        enableUpload: false,
       }));
     }
     return [];
@@ -93,6 +102,8 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({
     useInFormula: field?.useInFormula ?? true, // Alapértelmezetten igen
     order: field?.order ?? fieldCount, // Új mező a végére kerül
     displayStyle: (field?.displayStyle || 'default') as FieldDisplayStyle,
+    unit: field?.unit || '', // Mértékegység (pl. "cm")
+    iconUrl: field?.iconUrl || '', // Ikon URL
     validation: {
       min: field?.validation?.min?.toString() || '',
       max: field?.validation?.max?.toString() || '',
@@ -131,15 +142,14 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({
       newErrors.label = 'Megjelenített név kötelező';
     }
 
-    if (
-      (formData.type === 'SELECT' || formData.type === 'RADIO') &&
-      options.length === 0
-    ) {
+    const typesWithOptions = ['SELECT', 'RADIO', 'PRODUCT_CARD', 'DELIVERY_TIME', 'EXTRAS', 'GRAPHIC_SELECT'];
+
+    if (typesWithOptions.includes(formData.type) && options.length === 0) {
       newErrors.options = 'Legalább egy opció megadása kötelező';
     }
 
     // Validáljuk az opciókat
-    if (formData.type === 'SELECT' || formData.type === 'RADIO') {
+    if (typesWithOptions.includes(formData.type)) {
       const hasEmptyLabel = options.some((opt) => !opt.label.trim());
       if (hasEmptyLabel) {
         newErrors.options = 'Minden opciónak kell címke';
@@ -157,7 +167,10 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({
       value: '',
       price: undefined,
       imageUrl: '',
+      patternUrl: '',
+      badge: '',
       description: '',
+      htmlContent: '',
       features: []
     }]);
   };
@@ -234,7 +247,7 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({
       if (formData.validation.pattern) validation.pattern = formData.validation.pattern;
     }
 
-    // Clean up options - remove empty imageUrl, description, features
+    // Clean up options - remove empty fields
     const cleanedOptions = options.map(opt => {
       const cleanOpt: FieldOption = {
         label: opt.label,
@@ -242,7 +255,10 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({
       };
       if (opt.price !== undefined) cleanOpt.price = opt.price;
       if (opt.imageUrl) cleanOpt.imageUrl = opt.imageUrl;
+      if (opt.patternUrl) cleanOpt.patternUrl = opt.patternUrl;
+      if (opt.badge) cleanOpt.badge = opt.badge;
       if (opt.description) cleanOpt.description = opt.description;
+      if (opt.htmlContent) cleanOpt.htmlContent = opt.htmlContent;
       if (opt.features && opt.features.filter(f => f.trim()).length > 0) {
         cleanOpt.features = opt.features.filter(f => f.trim());
       }
@@ -261,13 +277,15 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({
       displayStyle: formData.displayStyle !== 'default' ? formData.displayStyle : undefined,
       validation: Object.keys(validation).length > 0 ? validation : undefined,
       options:
-        (formData.type === 'SELECT' || formData.type === 'RADIO') && cleanedOptions.length > 0
+        (formData.type === 'SELECT' || formData.type === 'RADIO' || formData.type === 'PRODUCT_CARD' || formData.type === 'DELIVERY_TIME' || formData.type === 'EXTRAS') && cleanedOptions.length > 0
           ? cleanedOptions
           : undefined,
       presetValues:
         formData.type === 'NUMBER' && presetValues.length > 0
           ? presetValues.filter(p => p.label.trim())
           : undefined,
+      unit: formData.type === 'NUMBER' && formData.unit ? formData.unit : undefined,
+      iconUrl: formData.iconUrl || undefined,
     };
 
     onSave(newField);
@@ -345,6 +363,18 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({
               autoComplete="off"
               multiline={2}
             />
+
+            <Box paddingBlockStart="200">
+              <ImageUploader
+                label="Mező ikon (opcionális)"
+                value={formData.iconUrl}
+                onChange={(url) => setFormData((prev) => ({ ...prev, iconUrl: url }))}
+                endpoint="icon"
+                maxSizeMB={1}
+                previewSize={40}
+                helpText="Ikon, ami a mező neve mellett jelenik meg"
+              />
+            </Box>
           </FormLayout>
 
           <Divider />
@@ -377,8 +407,16 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({
           {/* NUMBER típusú validáció */}
           {formData.type === 'NUMBER' && (
             <>
-              <Text variant="headingMd" as="h3">Szám validáció</Text>
+              <Text variant="headingMd" as="h3">Szám beállítások</Text>
               <FormLayout>
+                <TextField
+                  label="Mértékegység"
+                  value={formData.unit}
+                  onChange={(value) => setFormData((prev) => ({ ...prev, unit: value }))}
+                  placeholder="pl. cm, db, m², kg"
+                  helpText="Ez jelenik meg az input mező végén (nem szerkeszthető a felhasználó által)"
+                  autoComplete="off"
+                />
                 <FormLayout.Group condensed>
                   <TextField
                     label="Minimum"
@@ -502,6 +540,385 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({
             </>
           )}
 
+          {/* PRODUCT_CARD opciók - Gazdag termék kártyák */}
+          {formData.type === 'PRODUCT_CARD' && (
+            <>
+              <Text variant="headingMd" as="h3">Termék kártyák</Text>
+              <Text variant="bodyMd" as="p" tone="subdued">
+                Gazdag termék/anyag választó kártyák képpel, mintával, badge-el és HTML leírással.
+              </Text>
+              {errors.options && (
+                <Banner tone="critical">{errors.options}</Banner>
+              )}
+
+              <BlockStack gap="500">
+                {options.map((option, index) => (
+                  <Box
+                    key={index}
+                    padding="400"
+                    background="bg-surface-secondary"
+                    borderRadius="300"
+                    borderWidth="025"
+                    borderColor="border"
+                  >
+                    <BlockStack gap="400">
+                      {/* Header: Sorszám és törlés */}
+                      <InlineStack align="space-between" blockAlign="center">
+                        <Text variant="headingSm" as="h4">
+                          {index + 1}. kártya
+                          {option.badge && (
+                            <span style={{
+                              marginLeft: '8px',
+                              padding: '2px 8px',
+                              backgroundColor: '#d72c0d',
+                              color: 'white',
+                              borderRadius: '4px',
+                              fontSize: '12px'
+                            }}>
+                              {option.badge}
+                            </span>
+                          )}
+                        </Text>
+                        <Button
+                          icon={DeleteIcon}
+                          tone="critical"
+                          onClick={() => removeOption(index)}
+                          accessibilityLabel="Kártya törlése"
+                        />
+                      </InlineStack>
+
+                      {/* Alap mezők */}
+                      <FormLayout>
+                        <FormLayout.Group>
+                          <TextField
+                            label="Megnevezés"
+                            value={option.label}
+                            onChange={(value) => updateOption(index, { label: value })}
+                            placeholder="pl. Standard molnió"
+                            autoComplete="off"
+                            requiredIndicator
+                          />
+                          <TextField
+                            label="Érték (kulcs)"
+                            value={option.value}
+                            onChange={(value) => updateOption(index, { value })}
+                            placeholder="standard_molnio"
+                            autoComplete="off"
+                            helpText="Azonosító a rendszerben"
+                          />
+                        </FormLayout.Group>
+
+                        <FormLayout.Group>
+                          <TextField
+                            label="Badge/Címke"
+                            value={option.badge || ''}
+                            onChange={(value) => updateOption(index, { badge: value })}
+                            placeholder="pl. Legnépszerűbb"
+                            autoComplete="off"
+                            helpText="Kiemelő címke a kártya tetején"
+                          />
+                          <TextField
+                            label="Felár (Ft)"
+                            type="number"
+                            value={option.price?.toString() || ''}
+                            onChange={(value) =>
+                              updateOption(index, {
+                                price: value ? Number(value) : undefined,
+                              })
+                            }
+                            placeholder="0"
+                            autoComplete="off"
+                            helpText="Ár, ami megjelenik a kártyán"
+                          />
+                        </FormLayout.Group>
+                      </FormLayout>
+
+                      <Divider />
+
+                      {/* Képek */}
+                      <Text variant="bodyMd" as="span" fontWeight="semibold">Képek</Text>
+                      <InlineStack gap="400" wrap={false}>
+                        <div style={{ flex: 1 }}>
+                          <ImageUploader
+                            label="Termék kép"
+                            value={option.imageUrl || ''}
+                            onChange={(url) => updateOption(index, { imageUrl: url })}
+                            endpoint="option-image"
+                            maxSizeMB={2}
+                            previewSize={80}
+                            helpText="Fő termék/anyag fotó"
+                          />
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <ImageUploader
+                            label="Minta kép"
+                            value={option.patternUrl || ''}
+                            onChange={(url) => updateOption(index, { patternUrl: url })}
+                            endpoint="option-image"
+                            maxSizeMB={2}
+                            previewSize={80}
+                            helpText="Textúra/minta előnézet"
+                          />
+                        </div>
+                      </InlineStack>
+
+                      <Divider />
+
+                      {/* HTML tartalom */}
+                      <TextField
+                        label="HTML tartalom"
+                        value={option.htmlContent || ''}
+                        onChange={(value) => updateOption(index, { htmlContent: value })}
+                        placeholder="<p>Részletes leírás <strong>formázással</strong>...</p>"
+                        autoComplete="off"
+                        multiline={4}
+                        helpText="HTML formázott szöveg (p, strong, em, ul, li tagek támogatottak)"
+                      />
+
+                      {/* Rövid leírás */}
+                      <TextField
+                        label="Rövid leírás"
+                        value={option.description || ''}
+                        onChange={(value) => updateOption(index, { description: value })}
+                        placeholder="Egyszerű szöveges leírás..."
+                        autoComplete="off"
+                        multiline={2}
+                        helpText="Alternatíva a HTML tartalomhoz"
+                      />
+
+                      {/* Features lista */}
+                      <BlockStack gap="200">
+                        <Text variant="bodyMd" as="span" fontWeight="semibold">
+                          Jellemzők (bullet pointok)
+                        </Text>
+                        {(option.features || []).map((feature, fIdx) => (
+                          <InlineStack key={fIdx} gap="200" blockAlign="center">
+                            <div style={{ flex: 1 }}>
+                              <TextField
+                                label={`Jellemző ${fIdx + 1}`}
+                                labelHidden
+                                value={feature}
+                                onChange={(value) => updateOptionFeature(index, fIdx, value)}
+                                placeholder="pl. UV álló, vízálló"
+                                autoComplete="off"
+                              />
+                            </div>
+                            <Button
+                              icon={DeleteIcon}
+                              tone="critical"
+                              onClick={() => removeOptionFeature(index, fIdx)}
+                              accessibilityLabel="Jellemző törlése"
+                              size="slim"
+                            />
+                          </InlineStack>
+                        ))}
+                        <Button
+                          icon={PlusIcon}
+                          onClick={() => addOptionFeature(index)}
+                          size="slim"
+                        >
+                          Jellemző hozzáadása
+                        </Button>
+                      </BlockStack>
+                    </BlockStack>
+                  </Box>
+                ))}
+
+                <Button icon={PlusIcon} onClick={addOption} variant="primary">
+                  Új kártya hozzáadása
+                </Button>
+              </BlockStack>
+
+              <Banner tone="info">
+                A PRODUCT_CARD típus ideális anyag- vagy termékválasztóhoz, ahol vizuális megjelenítés és részletes információk szükségesek.
+              </Banner>
+            </>
+          )}
+
+          {/* DELIVERY_TIME opciók - Átfutási idő választó */}
+          {formData.type === 'DELIVERY_TIME' && (
+            <>
+              <Text variant="headingMd" as="h3">Átfutási idő opciók</Text>
+              <Text variant="bodyMd" as="p" tone="subdued">
+                Válassz átfutási idő típus - egyszerű választó névvel, leírással és árral.
+              </Text>
+              {errors.options && (
+                <Banner tone="critical">{errors.options}</Banner>
+              )}
+
+              <BlockStack gap="300">
+                {options.map((option, index) => (
+                  <Box
+                    key={index}
+                    padding="400"
+                    background="bg-surface-secondary"
+                    borderRadius="200"
+                  >
+                    <InlineStack gap="300" align="center" blockAlign="end">
+                      <div style={{ flex: 2 }}>
+                        <TextField
+                          label="Megnevezés"
+                          value={option.label}
+                          onChange={(value) => updateOption(index, { label: value })}
+                          placeholder="pl. Expressz (3 munkanap)"
+                          autoComplete="off"
+                          requiredIndicator
+                        />
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <TextField
+                          label="Érték (kulcs)"
+                          value={option.value}
+                          onChange={(value) => updateOption(index, { value })}
+                          placeholder="express"
+                          autoComplete="off"
+                        />
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <TextField
+                          label="Ár (Ft)"
+                          type="number"
+                          value={option.price?.toString() || ''}
+                          onChange={(value) =>
+                            updateOption(index, {
+                              price: value ? Number(value) : undefined,
+                            })
+                          }
+                          placeholder="0"
+                          autoComplete="off"
+                        />
+                      </div>
+                      <Button
+                        icon={DeleteIcon}
+                        tone="critical"
+                        onClick={() => removeOption(index)}
+                        accessibilityLabel="Opció törlése"
+                      />
+                    </InlineStack>
+                    <div style={{ marginTop: '12px' }}>
+                      <TextField
+                        label="Rövid leírás"
+                        value={option.description || ''}
+                        onChange={(value) => updateOption(index, { description: value })}
+                        placeholder="pl. Gyorsított gyártás, hétvégi kiszállítás"
+                        autoComplete="off"
+                      />
+                    </div>
+                  </Box>
+                ))}
+
+                <Button icon={PlusIcon} onClick={addOption}>
+                  Új opció hozzáadása
+                </Button>
+              </BlockStack>
+
+              <Banner tone="info">
+                Az DELIVERY_TIME típus ideális átfutási idő vagy szállítási mód választáshoz.
+              </Banner>
+            </>
+          )}
+
+          {/* EXTRAS opciók - Extrák választó (több is választható) */}
+          {formData.type === 'EXTRAS' && (
+            <>
+              <Text variant="headingMd" as="h3">Extra opciók</Text>
+              <Text variant="bodyMd" as="p" tone="subdued">
+                Kiegészítők/extrák - a vásárló többet is választhat. Mindegyiknek van képe, címe, leírása és ára.
+              </Text>
+              {errors.options && (
+                <Banner tone="critical">{errors.options}</Banner>
+              )}
+
+              <BlockStack gap="400">
+                {options.map((option, index) => (
+                  <Box
+                    key={index}
+                    padding="400"
+                    background="bg-surface-secondary"
+                    borderRadius="200"
+                  >
+                    <BlockStack gap="300">
+                      {/* Header */}
+                      <InlineStack align="space-between" blockAlign="center">
+                        <Text variant="headingSm" as="h4">
+                          {index + 1}. extra
+                        </Text>
+                        <Button
+                          icon={DeleteIcon}
+                          tone="critical"
+                          onClick={() => removeOption(index)}
+                          accessibilityLabel="Extra törlése"
+                        />
+                      </InlineStack>
+
+                      {/* Alap mezők */}
+                      <FormLayout>
+                        <FormLayout.Group>
+                          <TextField
+                            label="Megnevezés"
+                            value={option.label}
+                            onChange={(value) => updateOption(index, { label: value })}
+                            placeholder="pl. Laminálás"
+                            autoComplete="off"
+                            requiredIndicator
+                          />
+                          <TextField
+                            label="Érték (kulcs)"
+                            value={option.value}
+                            onChange={(value) => updateOption(index, { value })}
+                            placeholder="laminalas"
+                            autoComplete="off"
+                          />
+                          <TextField
+                            label="Ár (Ft)"
+                            type="number"
+                            value={option.price?.toString() || ''}
+                            onChange={(value) =>
+                              updateOption(index, {
+                                price: value ? Number(value) : undefined,
+                              })
+                            }
+                            placeholder="0"
+                            autoComplete="off"
+                          />
+                        </FormLayout.Group>
+                      </FormLayout>
+
+                      {/* Kép */}
+                      <ImageUploader
+                        label="Extra kép"
+                        value={option.imageUrl || ''}
+                        onChange={(url) => updateOption(index, { imageUrl: url })}
+                        endpoint="option-image"
+                        maxSizeMB={2}
+                        previewSize={60}
+                        helpText="Opcionális illusztráció"
+                      />
+
+                      {/* Leírás */}
+                      <TextField
+                        label="Leírás"
+                        value={option.description || ''}
+                        onChange={(value) => updateOption(index, { description: value })}
+                        placeholder="pl. Extra védőréteg a tartósságért"
+                        autoComplete="off"
+                        multiline={2}
+                      />
+                    </BlockStack>
+                  </Box>
+                ))}
+
+                <Button icon={PlusIcon} onClick={addOption}>
+                  Új extra hozzáadása
+                </Button>
+              </BlockStack>
+
+              <Banner tone="info">
+                Az EXTRAS típusnál a vásárló több opciót is kiválaszthat egyszerre. Az árak összeadódnak.
+              </Banner>
+            </>
+          )}
+
           {/* SELECT/RADIO opciók */}
           {(formData.type === 'SELECT' || formData.type === 'RADIO') && (
             <>
@@ -579,12 +996,13 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({
                       {/* Kártyás megjelenítés extra mezői */}
                       {formData.displayStyle === 'card' && (
                         <>
-                          <TextField
-                            label="Kép URL"
+                          <ImageUploader
+                            label="Opció kép"
                             value={option.imageUrl || ''}
-                            onChange={(value) => updateOption(index, { imageUrl: value })}
-                            placeholder="https://example.com/image.jpg"
-                            autoComplete="off"
+                            onChange={(url) => updateOption(index, { imageUrl: url })}
+                            endpoint="option-image"
+                            maxSizeMB={2}
+                            previewSize={48}
                             helpText="Opcionális kép a kártyán"
                           />
 

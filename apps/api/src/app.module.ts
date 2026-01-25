@@ -10,6 +10,7 @@ import { ShopifyModule } from './domains/shopify/shopify.module';
 import { AssignmentModule } from './domains/assignment/assignment.module';
 import { DraftOrderModule } from './domains/draft-order/draft-order.module';
 import { PricingModule } from './domains/pricing/pricing.module';
+import { UploadModule } from './domains/upload/upload.module';
 import { ShopHeaderInterceptor } from './domains/common/interceptors/shop-header.interceptor';
 
 @Module({
@@ -22,6 +23,7 @@ import { ShopHeaderInterceptor } from './domains/common/interceptors/shop-header
     AssignmentModule, // Assignment domain (template assignments)
     DraftOrderModule, // Draft Orders (custom pricing)
     PricingModule,    // Pricing (template-based price calculation)
+    UploadModule,     // File upload (S3)
   ],
   controllers: [AppController],
   providers: [

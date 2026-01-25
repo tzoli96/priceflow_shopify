@@ -8,6 +8,10 @@ export const FIELD_TYPE_OPTIONS: { label: string; value: FieldType }[] = [
   { label: 'Jelölőnégyzet', value: FieldType.CHECKBOX },
   { label: 'Szövegterület', value: FieldType.TEXTAREA },
   { label: 'Fájl feltöltés', value: FieldType.FILE },
+  { label: 'Termék kártya', value: FieldType.PRODUCT_CARD },
+  { label: 'Átfutási idő', value: FieldType.DELIVERY_TIME },
+  { label: 'Extrák', value: FieldType.EXTRAS },
+  { label: 'Grafika választó', value: FieldType.GRAPHIC_SELECT },
 ];
 
 export const FORMULA_FUNCTIONS = [

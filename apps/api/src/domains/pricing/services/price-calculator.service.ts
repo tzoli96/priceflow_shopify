@@ -7,6 +7,7 @@ import type { IShopRepository } from '../../shop/repositories/shop.repository.in
 import { SHOP_REPOSITORY } from '../../shop/repositories/shop.repository.interface';
 import { TemplateModel } from '../../template/models/template.model';
 import { TemplateFieldModel } from '../../template/models/template-field.model';
+import { TemplateSectionModel } from '../../template/models/template-section.model';
 
 /**
  * Price breakdown item for display
@@ -87,6 +88,8 @@ export interface ProductTemplateInfo {
     name: string;
     description?: string;
     fields: TemplateFieldDTO[];
+    // Sections (new system)
+    sections?: TemplateSectionDTO[];
     // Express option
     hasExpressOption: boolean;
     expressMultiplier?: number;
@@ -96,6 +99,12 @@ export interface ProductTemplateInfo {
     quantityLimits?: QuantityLimitsInfo;
     // Discount tiers
     discountTiers?: DiscountTierInfo[];
+    // Notes field
+    hasNotesField?: boolean;
+    notesFieldLabel?: string;
+    notesFieldPlaceholder?: string;
+    // Quantity presets
+    quantityPresets?: (number | { label: string; value: number })[];
   };
 }
 
@@ -110,9 +119,35 @@ export interface TemplateFieldDTO {
   placeholder?: string;
   helpText?: string;
   validation?: any;
-  options?: Array<{ value: string; label: string }>;
+  options?: Array<{
+    value: string;
+    label: string;
+    price?: number;
+    imageUrl?: string;
+    description?: string;
+    features?: string[];
+  }>;
   useInFormula: boolean;
   order: number;
+  displayStyle?: string;
+  presetValues?: Array<{ label: string; value: number | string | Record<string, number> }>;
+}
+
+/**
+ * Template section DTO for API response
+ */
+export interface TemplateSectionDTO {
+  key: string;
+  title: string;
+  description?: string;
+  layoutType: string;
+  columnsCount?: number;
+  collapsible: boolean;
+  defaultOpen: boolean;
+  showNumber: boolean;
+  order: number;
+  builtInType?: string;
+  fields: TemplateFieldDTO[];
 }
 
 /**
@@ -214,6 +249,11 @@ export class PriceCalculatorService {
           }
         : undefined;
 
+    // Map sections if available
+    const sections = matchingTemplate.sections && matchingTemplate.sections.length > 0
+      ? matchingTemplate.sections.map((s) => this.mapSectionToDTO(s))
+      : undefined;
+
     return {
       hasTemplate: true,
       template: {
@@ -221,6 +261,8 @@ export class PriceCalculatorService {
         name: matchingTemplate.name,
         description: matchingTemplate.description ?? undefined,
         fields: matchingTemplate.fields.map((f) => this.mapFieldToDTO(f)),
+        // Sections (new system)
+        sections,
         // Express option
         hasExpressOption: matchingTemplate.hasExpressOption,
         expressMultiplier: matchingTemplate.expressMultiplier ?? undefined,
@@ -230,6 +272,12 @@ export class PriceCalculatorService {
         quantityLimits,
         // Discount tiers
         discountTiers: matchingTemplate.discountTiers ?? undefined,
+        // Notes field
+        hasNotesField: matchingTemplate.hasNotesField ?? false,
+        notesFieldLabel: matchingTemplate.notesFieldLabel ?? undefined,
+        notesFieldPlaceholder: matchingTemplate.notesFieldPlaceholder ?? undefined,
+        // Quantity presets
+        quantityPresets: matchingTemplate.quantityPresets ?? undefined,
       },
     };
   }
@@ -248,7 +296,7 @@ export class PriceCalculatorService {
   async calculatePrice(
     shopDomain: string,
     templateId: string,
-    fieldValues: Record<string, number>,
+    fieldValues: Record<string, any>, // Can be number, string, or string[] (for EXTRAS)
     quantity: number,
     basePrice: number,
     options: CalculationOptions = {},
@@ -269,12 +317,16 @@ export class PriceCalculatorService {
       throw new NotFoundException(`Template is not active: ${templateId}`);
     }
 
-    // Validate required fields
-    this.validateRequiredFields(template.fields, fieldValues);
+    // Validate required fields (from both standalone and section fields)
+    const allFields = this.getAllFields(template);
+    this.validateRequiredFields(allFields, fieldValues);
+
+    // Convert field values to numeric context (including _price for option fields)
+    const numericFieldValues = this.convertFieldValuesToNumeric(allFields, fieldValues);
 
     // Prepare context with all variables
     const context = this.formulaEvaluator.prepareContext(
-      fieldValues,
+      numericFieldValues,
       basePrice,
       quantity,
     );
@@ -465,12 +517,21 @@ export class PriceCalculatorService {
    */
   private validateRequiredFields(
     fields: TemplateFieldModel[],
-    values: Record<string, number>,
+    values: Record<string, any>,
   ): void {
     const requiredFields = fields.filter((f) => f.required);
 
     for (const field of requiredFields) {
-      if (values[field.key] === undefined || values[field.key] === null) {
+      const value = values[field.key];
+
+      // Check if value is missing or empty
+      const isEmpty =
+        value === undefined ||
+        value === null ||
+        value === '' ||
+        (Array.isArray(value) && value.length === 0);
+
+      if (isEmpty) {
         throw new NotFoundException(
           `Required field missing: ${field.label} (${field.key})`,
         );
@@ -493,7 +554,106 @@ export class PriceCalculatorService {
       options: field.options,
       useInFormula: field.useInFormula,
       order: field.order,
+      displayStyle: field.displayStyle || undefined,
+      presetValues: field.presetValues || undefined,
     };
+  }
+
+  /**
+   * Section to DTO mapping
+   */
+  private mapSectionToDTO(section: TemplateSectionModel): TemplateSectionDTO {
+    return {
+      key: section.key,
+      title: section.title,
+      description: section.description || undefined,
+      layoutType: section.layoutType,
+      columnsCount: section.columnsCount || undefined,
+      collapsible: section.collapsible,
+      defaultOpen: section.defaultOpen,
+      showNumber: section.showNumber,
+      order: section.order,
+      builtInType: section.builtInType || undefined,
+      fields: section.fields.map((f) => this.mapFieldToDTO(f)),
+    };
+  }
+
+  /**
+   * Get all fields from template (standalone + section fields)
+   */
+  private getAllFields(template: TemplateModel): TemplateFieldModel[] {
+    const standaloneFields = template.fields || [];
+    const sectionFields = (template.sections || []).flatMap((s) => s.fields || []);
+    return [...standaloneFields, ...sectionFields];
+  }
+
+  /**
+   * Convert field values to numeric context
+   * - NUMBER fields: use value directly
+   * - PRODUCT_CARD, DELIVERY_TIME: add {key}_price with selected option's price
+   * - EXTRAS: add {key}_price with sum of selected options' prices
+   */
+  private convertFieldValuesToNumeric(
+    fields: TemplateFieldModel[],
+    fieldValues: Record<string, any>,
+  ): Record<string, number> {
+    const result: Record<string, number> = {};
+
+    for (const field of fields) {
+      const value = fieldValues[field.key];
+
+      if (value === undefined || value === null) {
+        continue;
+      }
+
+      switch (field.type) {
+        case 'NUMBER':
+          // Direct numeric value
+          result[field.key] = typeof value === 'number' ? value : Number(value) || 0;
+          break;
+
+        case 'PRODUCT_CARD':
+        case 'DELIVERY_TIME':
+          // Single selection - find option price
+          if (field.options && typeof value === 'string') {
+            const selectedOption = field.options.find((opt: any) => opt.value === value);
+            result[`${field.key}_price`] = selectedOption?.price ?? 0;
+          } else {
+            result[`${field.key}_price`] = 0;
+          }
+          break;
+
+        case 'EXTRAS':
+          // Multiple selection - sum of selected options' prices
+          if (field.options && Array.isArray(value)) {
+            const totalPrice = value.reduce((sum: number, selectedValue: string) => {
+              const option = field.options?.find((opt: any) => opt.value === selectedValue);
+              return sum + (option?.price ?? 0);
+            }, 0);
+            result[`${field.key}_price`] = totalPrice;
+          } else {
+            result[`${field.key}_price`] = 0;
+          }
+          break;
+
+        case 'SELECT':
+        case 'RADIO':
+          // SELECT/RADIO can also have price options
+          if (field.options && typeof value === 'string') {
+            const selectedOption = field.options.find((opt: any) => opt.value === value);
+            if (selectedOption?.price !== undefined) {
+              result[`${field.key}_price`] = selectedOption.price;
+            }
+          }
+          break;
+
+        default:
+          // Other fields are not used in formula
+          break;
+      }
+    }
+
+    return result;
   }
 
   /**

@@ -8,7 +8,7 @@
  * - Árkalkulációs képlet
  * - Rendelési mennyiség (min/max)
  * - Sávos kedvezmények
- * - Expressz gyártás opció
+ * - Megjegyzés mező
  */
 
 'use client';
@@ -35,9 +35,10 @@ import type {
   UpdateTemplateDto,
   ScopeType,
   DiscountTier,
+  TemplateSection,
 } from '@/types/template';
 import { FormSection } from '@/components/ui/UIComponents';
-import { FieldsList } from './FieldsList';
+import { SectionsList } from './SectionsList';
 import { FormulaBuilder } from './FormulaBuilder';
 import { ScopeSelector } from './ScopeSelector';
 
@@ -66,7 +67,7 @@ export function TemplateForm({
     pricingFormula: template?.pricingFormula || '',
     scopeType: template?.scopeType || ('GLOBAL' as ScopeType),
     scopeValues: template?.scopeValues || [],
-    fields: template?.fields || [],
+    sections: template?.sections || ([] as TemplateSection[]),
 
     // Rendelési mennyiség
     minQuantity: template?.minQuantity?.toString() || '',
@@ -76,12 +77,6 @@ export function TemplateForm({
 
     // Sávos kedvezmények
     discountTiers: template?.discountTiers || ([] as DiscountTier[]),
-
-    // Expressz opció
-    hasExpressOption: template?.hasExpressOption || false,
-    expressMultiplier: template?.expressMultiplier?.toString() || '1.5',
-    expressLabel: template?.expressLabel || 'Expressz gyártás (3 munkanap)',
-    normalLabel: template?.normalLabel || 'Normál gyártás (7-10 munkanap)',
 
     // Megjegyzés mező
     hasNotesField: template?.hasNotesField || false,
@@ -116,11 +111,14 @@ export function TemplateForm({
       newErrors.pricingFormula = 'Árkalkulációs képlet kötelező';
     }
 
-    if (formData.fields.length === 0) {
-      newErrors.fields = 'Legalább egy mező hozzáadása kötelező';
+    // Collect all fields from sections
+    const allFields = formData.sections.flatMap((s) => s.fields || []);
+
+    if (formData.sections.length === 0) {
+      newErrors.fields = 'Legalább egy szekció hozzáadása kötelező';
     }
 
-    const numberFields = formData.fields.filter((f) => f.type === 'NUMBER');
+    const numberFields = allFields.filter((f) => f.type === 'NUMBER');
     if (numberFields.length === 0 && formData.pricingFormula.trim()) {
       newErrors.fields =
         'Legalább egy NUMBER típusú mező szükséges a képlet használatához';
@@ -166,7 +164,8 @@ export function TemplateForm({
         pricingFormula: formData.pricingFormula,
         scopeType: formData.scopeType,
         scopeValues: formData.scopeValues,
-        fields: formData.fields,
+        fields: [], // Empty - all fields are now in sections
+        sections: formData.sections,
 
         // Rendelési mennyiség
         minQuantity: formData.minQuantity ? Number(formData.minQuantity) : undefined,
@@ -177,14 +176,6 @@ export function TemplateForm({
         // Sávos kedvezmények
         discountTiers:
           formData.discountTiers.length > 0 ? formData.discountTiers : undefined,
-
-        // Expressz opció
-        hasExpressOption: formData.hasExpressOption,
-        expressMultiplier: formData.hasExpressOption
-          ? Number(formData.expressMultiplier)
-          : undefined,
-        expressLabel: formData.hasExpressOption ? formData.expressLabel : undefined,
-        normalLabel: formData.hasExpressOption ? formData.normalLabel : undefined,
 
         // Megjegyzés mező
         hasNotesField: formData.hasNotesField,
@@ -253,11 +244,11 @@ export function TemplateForm({
           </FormSection>
         </Card>
 
-        {/* Fields Configuration */}
+        {/* Sections Configuration */}
         <Card>
           <FormSection
-            title="Mezők konfigurációja"
-            description="Add meg a sablon mezőit és tulajdonságaikat"
+            title="Szekciók konfigurációja"
+            description="Csoportosítsd a mezőket szekciókba a jobb felhasználói élmény érdekében"
           >
             {errors.fields && (
               <div style={{ marginBottom: '16px' }}>
@@ -266,10 +257,19 @@ export function TemplateForm({
                 </Text>
               </div>
             )}
-            <FieldsList
-              fields={formData.fields}
-              onChange={(fields) => handleChange('fields', fields)}
-            />
+            <Banner tone="info">
+              <p>
+                A szekciók segítségével a mezők logikus csoportokba rendezhetők.
+                Minden szekció egy összecsukható kártya lesz a storefront-on.
+                A built-in típusú szekciók (Mennyiség, Expressz, Megjegyzés) automatikusan renderelődnek.
+              </p>
+            </Banner>
+            <div style={{ marginTop: '16px' }}>
+              <SectionsList
+                sections={formData.sections}
+                onChange={(sections) => handleChange('sections', sections)}
+              />
+            </div>
           </FormSection>
         </Card>
 
@@ -281,7 +281,7 @@ export function TemplateForm({
           >
             <FormulaBuilder
               formula={formData.pricingFormula}
-              fields={formData.fields}
+              fields={formData.sections.flatMap((s) => s.fields || [])}
               onChange={(formula) => handleChange('pricingFormula', formula)}
               error={errors.pricingFormula}
             />
@@ -413,60 +413,6 @@ export function TemplateForm({
                   Példa: 1-5 db = 0%, 6-9 db = 10%, 10+ db = 15%. A kedvezmény a végső
                   számított árból vonódik le.
                 </Banner>
-              )}
-            </BlockStack>
-          </FormSection>
-        </Card>
-
-        {/* Express Option */}
-        <Card>
-          <FormSection
-            title="Expressz gyártás"
-            description="Gyorsított gyártás opció feláras szolgáltatásként"
-          >
-            <BlockStack gap="400">
-              <Checkbox
-                label="Expressz gyártás opció engedélyezése"
-                checked={formData.hasExpressOption}
-                onChange={(checked) => handleChange('hasExpressOption', checked)}
-              />
-
-              {formData.hasExpressOption && (
-                <>
-                  <Divider />
-                  <FormLayout>
-                    <TextField
-                      label="Expressz szorzó"
-                      type="number"
-                      value={formData.expressMultiplier}
-                      onChange={(value) => handleChange('expressMultiplier', value)}
-                      helpText="pl. 1.5 = +50% felár az alapárhoz képest"
-                      autoComplete="off"
-                    />
-
-                    <FormLayout.Group>
-                      <TextField
-                        label="Normál gyártás címke"
-                        value={formData.normalLabel}
-                        onChange={(value) => handleChange('normalLabel', value)}
-                        placeholder="Normál gyártás (7-10 munkanap)"
-                        autoComplete="off"
-                      />
-                      <TextField
-                        label="Expressz gyártás címke"
-                        value={formData.expressLabel}
-                        onChange={(value) => handleChange('expressLabel', value)}
-                        placeholder="Expressz gyártás (3 munkanap)"
-                        autoComplete="off"
-                      />
-                    </FormLayout.Group>
-                  </FormLayout>
-
-                  <Banner tone="info">
-                    A vásárló a termék oldalon választhat a normál és az expressz gyártás
-                    között. Az expressz ár = alapár × {formData.expressMultiplier || '1.5'}
-                  </Banner>
-                </>
               )}
             </BlockStack>
           </FormSection>

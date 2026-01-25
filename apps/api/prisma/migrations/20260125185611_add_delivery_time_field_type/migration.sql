@@ -1,0 +1,2 @@
+-- AlterEnum
+ALTER TYPE "FieldType" ADD VALUE 'DELIVERY_TIME';

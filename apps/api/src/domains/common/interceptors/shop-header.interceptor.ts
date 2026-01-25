@@ -43,6 +43,8 @@ export class ShopHeaderInterceptor implements NestInterceptor {
     '/api/shopify/current', // Current shop from database (single-shop mode)
     '/api/shopify/status',  // Shop status check
     '/api/shopify/dev-setup', // Dev shop setup
+    '/api/upload',         // File uploads (S3)
+    '/api/pricing',        // Pricing API (storefront)
   ];
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
