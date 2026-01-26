@@ -56,13 +56,7 @@ export class UpdateTemplateDto {
   @IsOptional()
   scopeValues?: string[];
 
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => CreateTemplateFieldDto)
-  @IsOptional()
-  fields?: CreateTemplateFieldDto[];
-
-  // Szekciók (új rendszer)
+  // All fields are in sections
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => CreateTemplateSectionDto)
@@ -100,6 +94,27 @@ export class UpdateTemplateDto {
   @Type(() => DiscountTierDto)
   @IsOptional()
   discountTiers?: DiscountTierDto[] | null;
+
+  // Expressz gyártás opció
+  @IsBoolean()
+  @IsOptional()
+  hasExpressOption?: boolean;
+
+  @IsNumber()
+  @IsOptional()
+  @Min(1)
+  @Max(10)
+  expressMultiplier?: number | null;
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(255)
+  expressLabel?: string | null;
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(255)
+  normalLabel?: string | null;
 
   // Megjegyzés mező
   @IsBoolean()

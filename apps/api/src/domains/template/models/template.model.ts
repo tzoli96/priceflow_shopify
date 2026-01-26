@@ -46,8 +46,7 @@ export class TemplateModel {
     public isActive: boolean,
     public readonly createdAt: Date,
     public readonly updatedAt: Date,
-    public fields: TemplateFieldModel[] = [],
-    // Szekciók (új rendszer)
+    // All fields are in sections - no top-level fields
     public sections: TemplateSectionModel[] = [],
     // Új mezők
     public minQuantity: number | null = null,
@@ -91,7 +90,6 @@ export class TemplateModel {
     pricingFormula: string,
     scopeType: ScopeType,
     scopeValues: string[],
-    fields: TemplateFieldModel[] = [],
     sections: TemplateSectionModel[] = [],
   ): TemplateModel {
     // Validációk
@@ -121,7 +119,6 @@ export class TemplateModel {
       true, // isActive by default
       now,
       now,
-      fields,
       sections,
     );
   }
@@ -133,10 +130,6 @@ export class TemplateModel {
    * @returns TemplateModel instance
    */
   static fromPersistence(prismaTemplate: any): TemplateModel {
-    const fields = prismaTemplate.fields
-      ? prismaTemplate.fields.map((f: any) => TemplateFieldModel.fromPersistence(f))
-      : [];
-
     const sections = prismaTemplate.sections
       ? prismaTemplate.sections.map((s: any) => TemplateSectionModel.fromPersistence(s))
       : [];
@@ -153,8 +146,6 @@ export class TemplateModel {
       prismaTemplate.isActive,
       prismaTemplate.createdAt,
       prismaTemplate.updatedAt,
-      fields,
-      // Szekciók
       sections,
       // Új mezők
       prismaTemplate.minQuantity,
@@ -274,42 +265,4 @@ export class TemplateModel {
     this.isActive = false;
   }
 
-  /**
-   * Field hozzáadása
-   *
-   * @param field - TemplateFieldModel instance
-   */
-  addField(field: TemplateFieldModel): void {
-    // Check for duplicate field keys
-    const duplicate = this.fields.find((f) => f.key === field.key);
-    if (duplicate) {
-      throw new Error(`Field with key "${field.key}" already exists`);
-    }
-
-    this.fields.push(field);
-  }
-
-  /**
-   * Field eltávolítása
-   *
-   * @param fieldKey - Field kulcsa
-   */
-  removeField(fieldKey: string): void {
-    this.fields = this.fields.filter((f) => f.key !== fieldKey);
-  }
-
-  /**
-   * Field frissítése
-   *
-   * @param fieldKey - Field kulcsa
-   * @param updates - Frissítendő mezők
-   */
-  updateField(fieldKey: string, updates: Partial<TemplateFieldModel>): void {
-    const field = this.fields.find((f) => f.key === fieldKey);
-    if (!field) {
-      throw new Error(`Field with key "${fieldKey}" not found`);
-    }
-
-    Object.assign(field, updates);
-  }
 }

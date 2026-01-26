@@ -43,11 +43,12 @@ export const FormulaBuilder: React.FC<FormulaBuilderProps> = ({
 
   // Fields with price options (these will have _price suffix in formula)
   const priceOptionFields = fields.filter(field => {
-    // Always include these types
+    // Always include these types - they always generate _price variable
     if (
       field.type === 'PRODUCT_CARD' ||
       field.type === 'DELIVERY_TIME' ||
-      field.type === 'EXTRAS'
+      field.type === 'EXTRAS' ||
+      field.type === 'GRAPHIC_SELECT'
     ) {
       return true;
     }

@@ -164,7 +164,6 @@ export function TemplateForm({
         pricingFormula: formData.pricingFormula,
         scopeType: formData.scopeType,
         scopeValues: formData.scopeValues,
-        fields: [], // Empty - all fields are now in sections
         sections: formData.sections,
 
         // Rendelési mennyiség

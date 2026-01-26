@@ -8,6 +8,7 @@ import { ScopeType, FieldType } from '@prisma/client';
 export class TemplateFieldResponseDto {
   id: string;
   templateId: string;
+  sectionId: string | null;
   key: string;
   type: FieldType;
   label: string;
@@ -22,6 +23,8 @@ export class TemplateFieldResponseDto {
   order: number;
   displayStyle: string | null;
   presetValues: any | null;
+  iconUrl: string | null;
+  unit: string | null;
   createdAt: Date;
   updatedAt: Date;
 
@@ -29,6 +32,7 @@ export class TemplateFieldResponseDto {
     const dto = new TemplateFieldResponseDto();
     dto.id = field.id;
     dto.templateId = field.templateId;
+    dto.sectionId = field.sectionId ?? null;
     dto.key = field.key;
     dto.type = field.type;
     dto.label = field.label;
@@ -43,8 +47,51 @@ export class TemplateFieldResponseDto {
     dto.order = field.order;
     dto.displayStyle = field.displayStyle ?? null;
     dto.presetValues = field.presetValues ?? null;
+    dto.iconUrl = field.iconUrl ?? null;
+    dto.unit = field.unit ?? null;
     dto.createdAt = field.createdAt;
     dto.updatedAt = field.updatedAt;
+    return dto;
+  }
+}
+
+/**
+ * Template Section Response DTO
+ */
+export class TemplateSectionResponseDto {
+  id: string;
+  templateId: string;
+  key: string;
+  title: string;
+  description: string | null;
+  layoutType: string;
+  columnsCount: number | null;
+  collapsible: boolean;
+  defaultOpen: boolean;
+  showNumber: boolean;
+  order: number;
+  builtInType: string | null;
+  presets: any | null;
+  fields: TemplateFieldResponseDto[];
+
+  static fromModel(section: any): TemplateSectionResponseDto {
+    const dto = new TemplateSectionResponseDto();
+    dto.id = section.id;
+    dto.templateId = section.templateId;
+    dto.key = section.key;
+    dto.title = section.title;
+    dto.description = section.description ?? null;
+    dto.layoutType = section.layoutType;
+    dto.columnsCount = section.columnsCount ?? null;
+    dto.collapsible = section.collapsible ?? true;
+    dto.defaultOpen = section.defaultOpen ?? true;
+    dto.showNumber = section.showNumber ?? true;
+    dto.order = section.order;
+    dto.builtInType = section.builtInType ?? null;
+    dto.presets = section.presets ?? null;
+    dto.fields = section.fields
+      ? section.fields.map((f: any) => TemplateFieldResponseDto.fromModel(f))
+      : [];
     return dto;
   }
 }
@@ -105,7 +152,7 @@ export class TemplateResponseDto {
   scopeType: ScopeType;
   scopeValues: string[];
   isActive: boolean;
-  fields: TemplateFieldResponseDto[];
+  sections: TemplateSectionResponseDto[];
   createdAt: Date;
   updatedAt: Date;
 
@@ -143,8 +190,8 @@ export class TemplateResponseDto {
     dto.scopeType = template.scopeType;
     dto.scopeValues = template.scopeValues;
     dto.isActive = template.isActive;
-    dto.fields = template.fields
-      ? template.fields.map((f: any) => TemplateFieldResponseDto.fromModel(f))
+    dto.sections = template.sections
+      ? template.sections.map((s: any) => TemplateSectionResponseDto.fromModel(s))
       : [];
     dto.createdAt = template.createdAt;
     dto.updatedAt = template.updatedAt;

@@ -171,6 +171,14 @@ export class CreateTemplateFieldDto {
 
   @IsOptional()
   presetValues?: any; // PresetValue[] - előre definiált értékek
+
+  @IsString()
+  @IsOptional()
+  iconUrl?: string; // Ikon URL a label mellett
+
+  @IsString()
+  @IsOptional()
+  unit?: string; // Mértékegység (pl. "cm", "db", "m²")
 }
 
 /**
@@ -244,13 +252,7 @@ export class CreateTemplateDto {
   @IsString({ each: true })
   scopeValues: string[];
 
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => CreateTemplateFieldDto)
-  @IsOptional()
-  fields?: CreateTemplateFieldDto[] = [];
-
-  // Szekciók (új rendszer)
+  // All fields are in sections
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => CreateTemplateSectionDto)
@@ -284,6 +286,27 @@ export class CreateTemplateDto {
   @Type(() => DiscountTierDto)
   @IsOptional()
   discountTiers?: DiscountTierDto[];
+
+  // Expressz gyártás opció
+  @IsBoolean()
+  @IsOptional()
+  hasExpressOption?: boolean;
+
+  @IsNumber()
+  @IsOptional()
+  @Min(1)
+  @Max(10)
+  expressMultiplier?: number;
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(255)
+  expressLabel?: string;
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(255)
+  normalLabel?: string;
 
   // Megjegyzés mező
   @IsBoolean()

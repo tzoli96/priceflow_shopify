@@ -78,13 +78,31 @@ export class DiscountTierDto {
 }
 
 /**
+ * Response DTO for template section
+ */
+export class TemplateSectionResponseDto {
+  key: string;
+  title: string;
+  description?: string;
+  layoutType: string;
+  columnsCount?: number;
+  collapsible: boolean;
+  defaultOpen: boolean;
+  showNumber: boolean;
+  order: number;
+  builtInType?: string;
+  fields: TemplateFieldResponseDto[];
+}
+
+/**
  * Response DTO for template info
  */
 export class TemplateInfoResponseDto {
   id: string;
   name: string;
   description?: string;
-  fields: TemplateFieldResponseDto[];
+  // All fields are in sections
+  sections: TemplateSectionResponseDto[];
 
   // Express option
   hasExpressOption: boolean;
@@ -97,6 +115,14 @@ export class TemplateInfoResponseDto {
 
   // Discount tiers
   discountTiers?: DiscountTierDto[];
+
+  // Notes field
+  hasNotesField?: boolean;
+  notesFieldLabel?: string;
+  notesFieldPlaceholder?: string;
+
+  // Quantity presets
+  quantityPresets?: (number | { label: string; value: number })[];
 }
 
 /**

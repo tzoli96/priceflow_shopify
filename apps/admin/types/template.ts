@@ -182,10 +182,9 @@ export interface Template {
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
-  fields: TemplateField[];
 
-  // Szekciók (új rendszer)
-  sections?: TemplateSection[];
+  // All fields are in sections
+  sections: TemplateSection[];
 
   // Min/Max rendelési mennyiség
   minQuantity?: number;
@@ -217,8 +216,7 @@ export interface CreateTemplateDto {
   pricingFormula: string;
   scopeType?: ScopeType;
   scopeValues?: string[];
-  fields: Omit<TemplateField, 'id'>[];
-  sections?: Omit<TemplateSection, 'id'>[];
+  sections: Omit<TemplateSection, 'id'>[];
 
   // Opcionális mezők
   minQuantity?: number;
@@ -239,7 +237,6 @@ export interface UpdateTemplateDto {
   pricingFormula?: string;
   scopeType?: ScopeType;
   scopeValues?: string[];
-  fields?: Omit<TemplateField, 'id'>[];
   sections?: Omit<TemplateSection, 'id'>[];
 
   // Opcionális mezők

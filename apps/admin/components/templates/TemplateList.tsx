@@ -124,7 +124,9 @@ export function TemplateList({
               </Text>
             }
             renderItem={(template) => {
-              const { id, name, description, isActive, updatedAt, fields } = template;
+              const { id, name, description, isActive, updatedAt, sections } = template;
+              // Count fields from sections
+              const fieldsCount = (sections || []).reduce((sum, s) => sum + (s.fields?.length || 0), 0);
               const shortcutActions = [
                 {
                   content: 'Szerkesztés',
@@ -164,7 +166,7 @@ export function TemplateList({
 
                     {/* Metadata */}
                     <InlineStack gap="400" wrap={false}>
-                      <Badge tone="info">{fields.length} mező</Badge>
+                      <Badge tone="info">{fieldsCount} mező</Badge>
                       <Badge>{getScopeLabel(template)}</Badge>
                       <Text as="span" variant="bodySm" tone="subdued">
                         Módosítva: {formatRelativeTime(updatedAt)}

@@ -33,20 +33,11 @@ export class TemplateRepository implements ITemplateRepository {
         shopId, // Multi-tenant security
       },
       include: {
-        fields: {
-          orderBy: {
-            order: 'asc', // Field-ek rendezve order szerint
-          },
-        },
         sections: {
-          orderBy: {
-            order: 'asc',
-          },
+          orderBy: { order: 'asc' },
           include: {
             fields: {
-              orderBy: {
-                order: 'asc',
-              },
+              orderBy: { order: 'asc' },
             },
           },
         },
@@ -79,27 +70,16 @@ export class TemplateRepository implements ITemplateRepository {
         ...(options?.isActive !== undefined && { isActive: options.isActive }),
       },
       include: {
-        fields: {
-          orderBy: {
-            order: 'asc',
-          },
-        },
         sections: {
-          orderBy: {
-            order: 'asc',
-          },
+          orderBy: { order: 'asc' },
           include: {
             fields: {
-              orderBy: {
-                order: 'asc',
-              },
+              orderBy: { order: 'asc' },
             },
           },
         },
       },
-      orderBy: {
-        createdAt: 'desc',
-      },
+      orderBy: { createdAt: 'desc' },
       skip: options?.skip,
       take: options?.take,
     });
@@ -136,50 +116,57 @@ export class TemplateRepository implements ITemplateRepository {
    * INSERT INTO template_sections (...) VALUES (...), (...), ...
    */
   async save(template: TemplateModel): Promise<TemplateModel> {
-    const created = await this.prisma.template.create({
-      data: {
-        ...template.toPersistence(),
-        fields: {
-          create: template.fields.map((f) => {
-            const { templateId, id, createdAt, updatedAt, ...fieldData } = f.toPersistence();
-            return fieldData;
-          }),
-        },
-        sections: {
-          create: template.sections.map((s) => {
-            const { templateId, id, createdAt, updatedAt, fields, ...sectionData } = s.toPersistence();
-            return {
-              ...sectionData,
+    // Use transaction to create template and sections with fields
+    const created = await this.prisma.$transaction(async (tx) => {
+      // 1. Create template (no top-level fields - all fields are in sections)
+      const newTemplate = await tx.template.create({
+        data: template.toPersistence(),
+      });
+
+      // 2. Create sections with their fields
+      for (const section of template.sections) {
+        const { templateId, id, createdAt, updatedAt, ...sectionData } = section.toPersistence();
+
+        const newSection = await tx.templateSection.create({
+          data: {
+            ...sectionData,
+            templateId: newTemplate.id,
+          },
+        });
+
+        // 3. Create fields for this section
+        for (const field of section.fields) {
+          const { templateId: _tid, sectionId: _sid, id: _id, createdAt: _ca, updatedAt: _ua, ...fieldData } = field.toPersistence();
+
+          await tx.templateField.create({
+            data: {
+              ...fieldData,
+              templateId: newTemplate.id,
+              sectionId: newSection.id,
+            },
+          });
+        }
+      }
+
+      // 4. Return the complete template with all relations
+      return tx.template.findUnique({
+        where: { id: newTemplate.id },
+        include: {
+          sections: {
+            orderBy: { order: 'asc' },
+            include: {
               fields: {
-                create: s.fields.map((f) => {
-                  const { templateId, sectionId, id, createdAt, updatedAt, ...fieldData } = f.toPersistence();
-                  return fieldData;
-                }),
-              },
-            };
-          }),
-        },
-      },
-      include: {
-        fields: {
-          orderBy: {
-            order: 'asc',
-          },
-        },
-        sections: {
-          orderBy: {
-            order: 'asc',
-          },
-          include: {
-            fields: {
-              orderBy: {
-                order: 'asc',
+                orderBy: { order: 'asc' },
               },
             },
           },
         },
-      },
+      });
     });
+
+    if (!created) {
+      throw new Error('Failed to create template');
+    }
 
     return TemplateModel.fromPersistence(created);
   }
@@ -201,66 +188,58 @@ export class TemplateRepository implements ITemplateRepository {
    * INSERT INTO template_sections (...) VALUES (...), (...)
    */
   async update(template: TemplateModel): Promise<TemplateModel> {
-    // Transaction: delete old data, update template, create new data
+    // Transaction: delete old data, update template, create new sections/fields
     const updated = await this.prisma.$transaction(async (tx) => {
-      // Delete old fields (only those not in sections)
+      // 1. Delete ALL old fields
       await tx.templateField.deleteMany({
-        where: {
-          templateId: template.id,
-          sectionId: null,
-        },
+        where: { templateId: template.id },
       });
 
-      // Delete old sections (cascade deletes section fields)
+      // 2. Delete old sections
       await tx.templateSection.deleteMany({
-        where: {
-          templateId: template.id,
-        },
+        where: { templateId: template.id },
       });
 
-      // Update template and create new fields/sections
-      return tx.template.update({
-        where: {
-          id: template.id,
-        },
-        data: {
-          ...template.toPersistence(),
-          fields: {
-            create: template.fields.map((f) => {
-              const { templateId, id, createdAt, updatedAt, ...fieldData } = f.toPersistence();
-              return fieldData;
-            }),
+      // 3. Update template basic data
+      await tx.template.update({
+        where: { id: template.id },
+        data: template.toPersistence(),
+      });
+
+      // 4. Create sections with their fields
+      for (const section of template.sections) {
+        const { templateId: _tid, id: _id, createdAt: _ca, updatedAt: _ua, ...sectionData } = section.toPersistence();
+
+        const newSection = await tx.templateSection.create({
+          data: {
+            ...sectionData,
+            templateId: template.id,
           },
-          sections: {
-            create: template.sections.map((s) => {
-              const { templateId, id, createdAt, updatedAt, fields, ...sectionData } = s.toPersistence();
-              return {
-                ...sectionData,
-                fields: {
-                  create: s.fields.map((f) => {
-                    const { templateId, sectionId, id, createdAt, updatedAt, ...fieldData } = f.toPersistence();
-                    return fieldData;
-                  }),
-                },
-              };
-            }),
-          },
-        },
+        });
+
+        // Create fields for this section
+        for (const field of section.fields) {
+          const { templateId: _tid2, sectionId: _sid, id: _id2, createdAt: _ca2, updatedAt: _ua2, ...fieldData } = field.toPersistence();
+
+          await tx.templateField.create({
+            data: {
+              ...fieldData,
+              templateId: template.id,
+              sectionId: newSection.id,
+            },
+          });
+        }
+      }
+
+      // 5. Return the complete updated template
+      return tx.template.findUnique({
+        where: { id: template.id },
         include: {
-          fields: {
-            orderBy: {
-              order: 'asc',
-            },
-          },
           sections: {
-            orderBy: {
-              order: 'asc',
-            },
+            orderBy: { order: 'asc' },
             include: {
               fields: {
-                orderBy: {
-                  order: 'asc',
-                },
+                orderBy: { order: 'asc' },
               },
             },
           },

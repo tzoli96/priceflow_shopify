@@ -155,10 +155,12 @@ model TemplateField {
   order             Int         @default(0)
   displayStyle      String?     // 'default' | 'card' | 'chip'
   presetValues      Json?       // PresetValue[] - előre definiált értékek
+  iconUrl           String?     // Ikon URL a label mellett
+  unit              String?     // Mértékegység (pl. "cm", "db", "m²")
   createdAt         DateTime    @default(now())
   updatedAt         DateTime    @updatedAt
 
-  @@unique([templateId, key])
+  @@unique([templateId, sectionId, key])
   @@index([templateId])
   @@index([sectionId])
 }

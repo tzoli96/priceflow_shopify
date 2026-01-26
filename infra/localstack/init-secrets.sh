@@ -82,13 +82,13 @@ while IFS= read -r line || [ -n "$line" ]; do
 
       # Try to create or update the secret
       aws --endpoint-url=http://localstack:4566 \
-          --region us-east-1 \
+          --region eu-central-1 \
           --no-verify-ssl \
           secretsmanager create-secret \
           --name "$key" \
           --secret-string "$value" 2>/dev/null || \
       aws --endpoint-url=http://localstack:4566 \
-          --region us-east-1 \
+          --region eu-central-1 \
           --no-verify-ssl \
           secretsmanager put-secret-value \
           --secret-id "$key" \
@@ -106,7 +106,7 @@ echo ""
 # List all secrets
 echo "Available secrets:"
 aws --endpoint-url=http://localstack:4566 \
-    --region us-east-1 \
+    --region eu-central-1 \
     --no-verify-ssl \
     secretsmanager list-secrets \
     --query 'SecretList[].Name' \

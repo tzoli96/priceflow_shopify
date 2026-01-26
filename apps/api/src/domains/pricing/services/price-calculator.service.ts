@@ -87,9 +87,8 @@ export interface ProductTemplateInfo {
     id: string;
     name: string;
     description?: string;
-    fields: TemplateFieldDTO[];
-    // Sections (new system)
-    sections?: TemplateSectionDTO[];
+    // All fields are in sections
+    sections: TemplateSectionDTO[];
     // Express option
     hasExpressOption: boolean;
     expressMultiplier?: number;
@@ -249,10 +248,8 @@ export class PriceCalculatorService {
           }
         : undefined;
 
-    // Map sections if available
-    const sections = matchingTemplate.sections && matchingTemplate.sections.length > 0
-      ? matchingTemplate.sections.map((s) => this.mapSectionToDTO(s))
-      : undefined;
+    // Map sections (all fields are in sections)
+    const sections = (matchingTemplate.sections || []).map((s) => this.mapSectionToDTO(s));
 
     return {
       hasTemplate: true,
@@ -260,8 +257,7 @@ export class PriceCalculatorService {
         id: matchingTemplate.id,
         name: matchingTemplate.name,
         description: matchingTemplate.description ?? undefined,
-        fields: matchingTemplate.fields.map((f) => this.mapFieldToDTO(f)),
-        // Sections (new system)
+        // All fields are in sections
         sections,
         // Express option
         hasExpressOption: matchingTemplate.hasExpressOption,
@@ -579,12 +575,11 @@ export class PriceCalculatorService {
   }
 
   /**
-   * Get all fields from template (standalone + section fields)
+   * Get all fields from template sections
+   * Fields are ONLY in sections, not at top level
    */
   private getAllFields(template: TemplateModel): TemplateFieldModel[] {
-    const standaloneFields = template.fields || [];
-    const sectionFields = (template.sections || []).flatMap((s) => s.fields || []);
-    return [...standaloneFields, ...sectionFields];
+    return (template.sections || []).flatMap((s) => s.fields || []);
   }
 
   /**
@@ -614,6 +609,7 @@ export class PriceCalculatorService {
 
         case 'PRODUCT_CARD':
         case 'DELIVERY_TIME':
+        case 'GRAPHIC_SELECT':
           // Single selection - find option price
           if (field.options && typeof value === 'string') {
             const selectedOption = field.options.find((opt: any) => opt.value === value);

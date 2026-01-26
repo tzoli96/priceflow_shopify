@@ -5,6 +5,7 @@ import { SHOP_REPOSITORY } from '../../shop/repositories/shop.repository.interfa
 import type { IShopRepository } from '../../shop/repositories/shop.repository.interface';
 import { TemplateModel } from '../models/template.model';
 import { TemplateFieldModel } from '../models/template-field.model';
+import { TemplateSectionModel } from '../models/template-section.model';
 import { CreateTemplateDto } from '../dto/create-template.dto';
 import { UpdateTemplateDto } from '../dto/update-template.dto';
 import { FormulaValidatorService } from './formula-validator.service';
@@ -49,6 +50,37 @@ export class TemplateService {
   }
 
   /**
+   * Helper: Generálja a képletben elérhető változókat a mezők alapján
+   *
+   * A speciális mező típusok (PRODUCT_CARD, DELIVERY_TIME, EXTRAS, GRAPHIC_SELECT, SELECT, RADIO)
+   * `{key}_price` változót generálnak a képlethez.
+   * A NUMBER típusú mezők közvetlenül a kulcsukkal elérhetők.
+   */
+  private getFormulaVariablesFromFields(fields: Array<{ key: string; type: string | any }>): Array<{ key: string }> {
+    const variables: Array<{ key: string }> = [];
+
+    // Mezők típusa alapján generált változók
+    const priceGeneratingTypes = ['PRODUCT_CARD', 'DELIVERY_TIME', 'EXTRAS', 'GRAPHIC_SELECT', 'SELECT', 'RADIO'];
+
+    for (const field of fields) {
+      // Convert type to string in case it's an enum
+      const fieldType = String(field.type);
+
+      // NUMBER típusú mezők közvetlenül a kulcsukkal elérhetők
+      if (fieldType === 'NUMBER') {
+        variables.push({ key: field.key });
+      }
+
+      // Speciális mezők _price változót generálnak
+      if (priceGeneratingTypes.includes(fieldType)) {
+        variables.push({ key: `${field.key}_price` });
+      }
+    }
+
+    return variables;
+  }
+
+  /**
    * Template létrehozása
    *
    * @param shopDomain - Shop domain (pl. "example.myshopify.com")
@@ -66,9 +98,11 @@ export class TemplateService {
     // Get shop ID from domain
     const shopId = await this.getShopIdFromDomain(shopDomain);
 
-    // Validate formula
-    const fields = dto.fields || [];
-    const validation = this.formulaValidator.validate(dto.pricingFormula, fields);
+    // Validate formula - generate available variables from section fields
+    // Fields are ONLY in sections, not at top level
+    const allFields = (dto.sections || []).flatMap(section => section.fields || []);
+    const formulaVariables = this.getFormulaVariablesFromFields(allFields);
+    const validation = this.formulaValidator.validate(dto.pricingFormula, formulaVariables);
 
     if (!validation.valid) {
       throw new BadRequestException({
@@ -78,27 +112,53 @@ export class TemplateService {
       });
     }
 
-    // Create field models
-    const fieldModels = fields.map((fieldDto, index) =>
-      TemplateFieldModel.create(
+    // Create section models with their fields (all fields are in sections)
+    const sectionModels = (dto.sections || []).map((sectionDto, sectionIndex) => {
+      const section = TemplateSectionModel.create(
         '', // templateId will be set after save
-        fieldDto.key,
-        fieldDto.type,
-        fieldDto.label,
-        fieldDto.required ?? false,
-        fieldDto.useInFormula ?? true,
-        fieldDto.order ?? index,
-      ),
-    );
+        sectionDto.key,
+        sectionDto.title,
+        {
+          description: sectionDto.description,
+          layoutType: sectionDto.layoutType,
+          columnsCount: sectionDto.columnsCount,
+          collapsible: sectionDto.collapsible,
+          defaultOpen: sectionDto.defaultOpen,
+          showNumber: sectionDto.showNumber,
+          order: sectionDto.order ?? sectionIndex,
+          builtInType: sectionDto.builtInType,
+          presets: sectionDto.presets,
+        },
+      );
 
-    // Apply additional field properties
-    fieldModels.forEach((field, index) => {
-      const fieldDto = fields[index];
-      if (fieldDto.placeholder) field.setPlaceholder(fieldDto.placeholder);
-      if (fieldDto.helpText) field.setHelpText(fieldDto.helpText);
-      if (fieldDto.validation) field.setValidation(fieldDto.validation);
-      if (fieldDto.options) field.setOptions(fieldDto.options);
-      if (fieldDto.conditionalRules) field.setConditionalRules(fieldDto.conditionalRules);
+      // Add fields to section
+      (sectionDto.fields || []).forEach((fieldDto, fieldIndex) => {
+        const field = TemplateFieldModel.create(
+          '', // templateId will be set after save
+          fieldDto.key,
+          fieldDto.type,
+          fieldDto.label,
+          fieldDto.required ?? false,
+          fieldDto.useInFormula ?? true,
+          fieldDto.order ?? fieldIndex,
+        );
+
+        // Apply additional field properties
+        if (fieldDto.placeholder) field.setPlaceholder(fieldDto.placeholder);
+        if (fieldDto.helpText) field.setHelpText(fieldDto.helpText);
+        if (fieldDto.helpContent) field.helpContent = fieldDto.helpContent;
+        if (fieldDto.validation) field.setValidation(fieldDto.validation);
+        if (fieldDto.options) field.setOptions(fieldDto.options);
+        if (fieldDto.conditionalRules) field.setConditionalRules(fieldDto.conditionalRules);
+        if (fieldDto.displayStyle) field.displayStyle = fieldDto.displayStyle;
+        if (fieldDto.presetValues) field.presetValues = fieldDto.presetValues;
+        if (fieldDto.iconUrl) field.iconUrl = fieldDto.iconUrl;
+        if (fieldDto.unit) field.unit = fieldDto.unit;
+
+        section.addField(field);
+      });
+
+      return section;
     });
 
     // Create template model
@@ -109,7 +169,7 @@ export class TemplateService {
       dto.pricingFormula,
       dto.scopeType,
       dto.scopeValues,
-      fieldModels,
+      sectionModels,
     );
 
     // Set additional pricing options
@@ -179,8 +239,11 @@ export class TemplateService {
 
     // Validate formula if updated
     if (dto.pricingFormula) {
-      const fields = dto.fields || template.fields;
-      const validation = this.formulaValidator.validate(dto.pricingFormula, fields);
+      // Fields are ONLY in sections, not at top level
+      const sections = dto.sections || template.sections || [];
+      const allFields = sections.flatMap((section: any) => section.fields || []);
+      const formulaVariables = this.getFormulaVariablesFromFields(allFields);
+      const validation = this.formulaValidator.validate(dto.pricingFormula, formulaVariables);
 
       if (!validation.valid) {
         throw new BadRequestException({
@@ -199,27 +262,57 @@ export class TemplateService {
       dto.scopeValues,
     );
 
-    // Update fields if provided
-    if (dto.fields) {
-      template.fields = dto.fields.map((fieldDto, index) => {
-        const field = TemplateFieldModel.create(
+    // Update sections if provided
+    if (dto.sections !== undefined) {
+      const sectionModels = (dto.sections || []).map((sectionDto, sectionIndex) => {
+        const section = TemplateSectionModel.create(
           template.id,
-          fieldDto.key,
-          fieldDto.type,
-          fieldDto.label,
-          fieldDto.required ?? false,
-          fieldDto.useInFormula ?? true,
-          fieldDto.order ?? index,
+          sectionDto.key,
+          sectionDto.title,
+          {
+            description: sectionDto.description,
+            layoutType: sectionDto.layoutType,
+            columnsCount: sectionDto.columnsCount,
+            collapsible: sectionDto.collapsible,
+            defaultOpen: sectionDto.defaultOpen,
+            showNumber: sectionDto.showNumber,
+            order: sectionDto.order ?? sectionIndex,
+            builtInType: sectionDto.builtInType,
+            presets: sectionDto.presets,
+          },
         );
 
-        if (fieldDto.placeholder) field.setPlaceholder(fieldDto.placeholder);
-        if (fieldDto.helpText) field.setHelpText(fieldDto.helpText);
-        if (fieldDto.validation) field.setValidation(fieldDto.validation);
-        if (fieldDto.options) field.setOptions(fieldDto.options);
-        if (fieldDto.conditionalRules) field.setConditionalRules(fieldDto.conditionalRules);
+        // Add fields to section
+        (sectionDto.fields || []).forEach((fieldDto, fieldIndex) => {
+          const field = TemplateFieldModel.create(
+            template.id,
+            fieldDto.key,
+            fieldDto.type,
+            fieldDto.label,
+            fieldDto.required ?? false,
+            fieldDto.useInFormula ?? true,
+            fieldDto.order ?? fieldIndex,
+          );
 
-        return field;
+          // Apply additional field properties
+          if (fieldDto.placeholder) field.setPlaceholder(fieldDto.placeholder);
+          if (fieldDto.helpText) field.setHelpText(fieldDto.helpText);
+          if (fieldDto.helpContent) field.helpContent = fieldDto.helpContent;
+          if (fieldDto.validation) field.setValidation(fieldDto.validation);
+          if (fieldDto.options) field.setOptions(fieldDto.options);
+          if (fieldDto.conditionalRules) field.setConditionalRules(fieldDto.conditionalRules);
+          if (fieldDto.displayStyle) field.displayStyle = fieldDto.displayStyle;
+          if (fieldDto.presetValues) field.presetValues = fieldDto.presetValues;
+          if (fieldDto.iconUrl) field.iconUrl = fieldDto.iconUrl;
+          if (fieldDto.unit) field.unit = fieldDto.unit;
+
+          section.addField(field);
+        });
+
+        return section;
       });
+
+      template.sections = sectionModels;
     }
 
     // Handle isActive

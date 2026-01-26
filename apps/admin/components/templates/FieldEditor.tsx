@@ -28,8 +28,8 @@ import {
 } from '@shopify/polaris';
 import { PlusIcon, DeleteIcon } from '@shopify/polaris-icons';
 import type { TemplateField, FieldType, FieldOption, FieldDisplayStyle, PresetValue } from '@/types/template';
-import { FIELD_TYPE_OPTIONS } from '@/lib/constants/template';
 import { ImageUploader } from '@/components/common/ImageUploader';
+import { FieldTypeSelector } from './FieldTypeSelector';
 
 const DISPLAY_STYLE_OPTIONS = [
   { label: 'Alapértelmezett', value: 'default' },
@@ -262,6 +262,7 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({
       if (opt.features && opt.features.filter(f => f.trim()).length > 0) {
         cleanOpt.features = opt.features.filter(f => f.trim());
       }
+      if (opt.enableUpload !== undefined) cleanOpt.enableUpload = opt.enableUpload;
       return cleanOpt;
     });
 
@@ -277,7 +278,7 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({
       displayStyle: formData.displayStyle !== 'default' ? formData.displayStyle : undefined,
       validation: Object.keys(validation).length > 0 ? validation : undefined,
       options:
-        (formData.type === 'SELECT' || formData.type === 'RADIO' || formData.type === 'PRODUCT_CARD' || formData.type === 'DELIVERY_TIME' || formData.type === 'EXTRAS') && cleanedOptions.length > 0
+        (formData.type === 'SELECT' || formData.type === 'RADIO' || formData.type === 'PRODUCT_CARD' || formData.type === 'DELIVERY_TIME' || formData.type === 'EXTRAS' || formData.type === 'GRAPHIC_SELECT') && cleanedOptions.length > 0
           ? cleanedOptions
           : undefined,
       presetValues:
@@ -335,24 +336,25 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({
               />
             </FormLayout.Group>
 
-            <FormLayout.Group>
-              <Select
-                label="Mező típusa"
-                options={FIELD_TYPE_OPTIONS}
-                value={formData.type}
-                onChange={(value) =>
-                  setFormData((prev) => ({ ...prev, type: value as FieldType }))
-                }
-              />
+            <TextField
+              label="Placeholder"
+              value={formData.placeholder}
+              onChange={(value) => setFormData((prev) => ({ ...prev, placeholder: value }))}
+              placeholder="pl. Add meg a szélességet"
+              autoComplete="off"
+            />
+          </FormLayout>
 
-              <TextField
-                label="Placeholder"
-                value={formData.placeholder}
-                onChange={(value) => setFormData((prev) => ({ ...prev, placeholder: value }))}
-                placeholder="pl. Add meg a szélességet"
-                autoComplete="off"
-              />
-            </FormLayout.Group>
+          <Divider />
+
+          {/* Mező típus választás - vizuális */}
+          <Text variant="headingMd" as="h3">Mező típusa</Text>
+          <FieldTypeSelector
+            value={formData.type}
+            onChange={(type) => setFormData((prev) => ({ ...prev, type }))}
+          />
+
+          <FormLayout>
 
             <TextField
               label="Segítő szöveg"
@@ -915,6 +917,172 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({
 
               <Banner tone="info">
                 Az EXTRAS típusnál a vásárló több opciót is kiválaszthat egyszerre. Az árak összeadódnak.
+              </Banner>
+            </>
+          )}
+
+          {/* GRAPHIC_SELECT opciók - Grafika választó */}
+          {formData.type === 'GRAPHIC_SELECT' && (
+            <>
+              <Text variant="headingMd" as="h3">Grafika opciók</Text>
+              <Text variant="bodyMd" as="p" tone="subdued">
+                A vásárló választhat: feltölti saját grafikáját, vagy grafikai tervezést kér (felárért).
+              </Text>
+              {errors.options && (
+                <Banner tone="critical">{errors.options}</Banner>
+              )}
+
+              <BlockStack gap="400">
+                {options.length === 0 && (
+                  <Banner tone="warning">
+                    Adj hozzá legalább két opciót: egy "Feltöltöm" és egy "Tervezést kérek" lehetőséget.
+                  </Banner>
+                )}
+
+                {options.map((option, index) => (
+                  <Box
+                    key={index}
+                    padding="400"
+                    background="bg-surface-secondary"
+                    borderRadius="300"
+                    borderWidth="025"
+                    borderColor="border"
+                  >
+                    <BlockStack gap="400">
+                      {/* Header */}
+                      <InlineStack align="space-between" blockAlign="center">
+                        <Text variant="headingSm" as="h4">
+                          {index + 1}. opció
+                          {option.enableUpload && (
+                            <span style={{
+                              marginLeft: '8px',
+                              padding: '2px 8px',
+                              backgroundColor: '#1f8547',
+                              color: 'white',
+                              borderRadius: '4px',
+                              fontSize: '11px'
+                            }}>
+                              Feltöltés engedélyezve
+                            </span>
+                          )}
+                        </Text>
+                        <Button
+                          icon={DeleteIcon}
+                          tone="critical"
+                          onClick={() => removeOption(index)}
+                          accessibilityLabel="Opció törlése"
+                        />
+                      </InlineStack>
+
+                      {/* Alap mezők */}
+                      <FormLayout>
+                        <FormLayout.Group>
+                          <TextField
+                            label="Megnevezés"
+                            value={option.label}
+                            onChange={(value) => updateOption(index, { label: value })}
+                            placeholder="pl. Feltöltöm a grafikát"
+                            autoComplete="off"
+                            requiredIndicator
+                          />
+                          <TextField
+                            label="Érték (kulcs)"
+                            value={option.value}
+                            onChange={(value) => updateOption(index, { value })}
+                            placeholder="feltoltes"
+                            autoComplete="off"
+                            helpText="Azonosító a rendszerben"
+                          />
+                        </FormLayout.Group>
+
+                        <FormLayout.Group>
+                          <TextField
+                            label="Ár (Ft)"
+                            type="number"
+                            value={option.price?.toString() || ''}
+                            onChange={(value) =>
+                              updateOption(index, {
+                                price: value ? Number(value) : undefined,
+                              })
+                            }
+                            placeholder="0"
+                            autoComplete="off"
+                            helpText="Felár ezért az opcióért"
+                          />
+                          <div style={{ paddingTop: '24px' }}>
+                            <Checkbox
+                              label="Fájl feltöltés engedélyezése"
+                              checked={option.enableUpload || false}
+                              onChange={(checked) => updateOption(index, { enableUpload: checked })}
+                              helpText="Ha be van jelölve, a vásárló feltölthet grafikát"
+                            />
+                          </div>
+                        </FormLayout.Group>
+                      </FormLayout>
+
+                      {/* Leírás */}
+                      <TextField
+                        label="Leírás"
+                        value={option.description || ''}
+                        onChange={(value) => updateOption(index, { description: value })}
+                        placeholder="pl. Töltsd fel a kész grafikád PNG vagy PDF formátumban"
+                        autoComplete="off"
+                        multiline={2}
+                      />
+
+                      {/* Kép */}
+                      <ImageUploader
+                        label="Illusztráció (opcionális)"
+                        value={option.imageUrl || ''}
+                        onChange={(url) => updateOption(index, { imageUrl: url })}
+                        endpoint="option-image"
+                        maxSizeMB={2}
+                        previewSize={60}
+                        helpText="Kép az opció mellé"
+                      />
+                    </BlockStack>
+                  </Box>
+                ))}
+
+                <InlineStack gap="300">
+                  <Button
+                    icon={PlusIcon}
+                    onClick={() => {
+                      setOptions([...options, {
+                        label: 'Feltöltöm a grafikát',
+                        value: 'feltoltes',
+                        price: 0,
+                        enableUpload: true,
+                        description: 'Töltsd fel a kész grafikád',
+                        imageUrl: '',
+                        features: []
+                      }]);
+                    }}
+                  >
+                    "Feltöltöm" opció
+                  </Button>
+                  <Button
+                    icon={PlusIcon}
+                    onClick={() => {
+                      setOptions([...options, {
+                        label: 'Grafikai tervezést kérek',
+                        value: 'tervezes',
+                        price: 5000,
+                        enableUpload: false,
+                        description: 'Grafikusunk elkészíti a tervet',
+                        imageUrl: '',
+                        features: []
+                      }]);
+                    }}
+                  >
+                    "Tervezést kérek" opció
+                  </Button>
+                </InlineStack>
+              </BlockStack>
+
+              <Banner tone="info">
+                A GRAPHIC_SELECT típusnál tipikusan két opció van: egy feltöltéses (ingyenes vagy olcsóbb) és egy tervezést kérő (felárért).
+                Az "enableUpload" beállítás határozza meg, melyik opciónál jelenjen meg a fájlfeltöltő.
               </Banner>
             </>
           )}
