@@ -143,12 +143,9 @@ export const FormulaBuilder: React.FC<FormulaBuilderProps> = ({
                     onClick={() => handleFieldClick(field.key)}
                     tone="success"
                   >
-                    {field.key}
-                    {field.label && field.label !== field.key && (
-                      <span style={{ marginLeft: '4px', opacity: 0.7 }}>
-                        ({field.label})
-                      </span>
-                    )}
+                    {field.label && field.label !== field.key
+                      ? `${field.key} (${field.label})`
+                      : field.key}
                   </Button>
                 ))}
               </InlineStack>
@@ -173,14 +170,11 @@ export const FormulaBuilder: React.FC<FormulaBuilderProps> = ({
                       key={field.key}
                       size="slim"
                       onClick={() => handleFieldClick(`${field.key}_price`)}
-                      tone="warning"
+                      tone="critical"
                     >
-                      {field.key}_price
-                      {field.label && (
-                        <span style={{ marginLeft: '4px', opacity: 0.7 }}>
-                          ({field.label})
-                        </span>
-                      )}
+                      {field.label
+                        ? `${field.key}_price (${field.label})`
+                        : `${field.key}_price`}
                     </Button>
                   ))}
                 </InlineStack>

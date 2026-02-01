@@ -89,6 +89,16 @@ variable "shopify_api_secret" {
   sensitive   = true
 }
 
+variable "shopify_organization_id" {
+  description = "Shopify Partner szervezet azonosító"
+  type        = string
+}
+
+variable "shop_url" {
+  description = "Shopify bolt URL (pl. priceflow-dev.myshopify.com)"
+  type        = string
+}
+
 # -----------------------------------------------------------------------------
 # Alkalmazás titkos kulcsok
 # -----------------------------------------------------------------------------

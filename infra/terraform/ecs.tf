@@ -88,6 +88,12 @@ resource "aws_ecs_task_definition" "api" {
         { name = "AWS_REGION", value = var.aws_region },
         { name = "AWS_S3_BUCKET", value = aws_s3_bucket.uploads.id },
         { name = "AWS_S3_REGION", value = var.aws_region },
+        { name = "HOST", value = aws_lb.main.dns_name },
+        { name = "API_URL", value = "http://${aws_lb.main.dns_name}/api" },
+        { name = "SHOP_URL", value = var.shop_url },
+        { name = "SHOPIFY_ORGANIZATION_ID", value = var.shopify_organization_id },
+        { name = "EMBEDDED_APP_URL", value = "http://${aws_lb.main.dns_name}" },
+        { name = "WIDGET_APP_URL", value = "http://${aws_lb.main.dns_name}/storefront" },
       ]
 
       # Titkos környezeti változók a Secrets Manager-ből

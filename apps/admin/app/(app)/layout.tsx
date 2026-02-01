@@ -3,7 +3,7 @@
 import { AppProvider } from '@shopify/polaris';
 import '@shopify/polaris/build/esm/styles.css';
 import { useSearchParams } from 'next/navigation';
-import { ReactNode, useEffect, useState } from 'react';
+import { Suspense, ReactNode, useEffect, useState } from 'react';
 import { getShopFromUrl, setShopDomain, getShopDomain } from '@/lib/shopify/shop';
 
 interface AppLayoutProps {
@@ -29,6 +29,14 @@ interface AppLayoutProps {
  * Megjegyzés: App Bridge integration később lesz hozzáadva production környezethez
  */
 export default function AppLayout({ children }: AppLayoutProps) {
+  return (
+    <Suspense fallback={<div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', fontFamily: 'system-ui' }}><p>Initializing...</p></div>}>
+      <AppLayoutInner>{children}</AppLayoutInner>
+    </Suspense>
+  );
+}
+
+function AppLayoutInner({ children }: AppLayoutProps) {
   const searchParams = useSearchParams();
   const [initialized, setInitialized] = useState(false);
   const [hasShop, setHasShop] = useState(false);

@@ -61,7 +61,7 @@ function getShopFromLocalStorage(): string | null {
  * @returns Shop domain from VITE_SHOP_DOMAIN or null
  */
 function getShopFromEnv(): string | null {
-  const envShop = import.meta.env.VITE_SHOP_DOMAIN;
+  const envShop = process.env.NEXT_PUBLIC_SHOP_DOMAIN;
 
   if (envShop && isValidShopifyDomain(envShop)) {
     return envShop;

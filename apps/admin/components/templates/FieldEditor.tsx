@@ -307,7 +307,7 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({
           onAction: onClose,
         },
       ]}
-      large
+      size="large"
     >
       <Modal.Section>
         <BlockStack gap="400">

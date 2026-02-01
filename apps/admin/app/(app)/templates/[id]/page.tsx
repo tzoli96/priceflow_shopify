@@ -70,7 +70,7 @@ export default function EditTemplatePage() {
   // Loading state
   if (isLoading) {
     return (
-      <Page title="Sablon szerkesztése" breadcrumbs={[{ content: 'Sablonok', url: '/' }]}>
+      <Page title="Sablon szerkesztése" backAction={{ content: 'Sablonok', url: '/' }}>
         <LoadingState message="Sablon betöltése..." />
       </Page>
     );
@@ -79,7 +79,7 @@ export default function EditTemplatePage() {
   // Error state
   if (error || !template) {
     return (
-      <Page title="Sablon szerkesztése" breadcrumbs={[{ content: 'Sablonok', url: '/' }]}>
+      <Page title="Sablon szerkesztése" backAction={{ content: 'Sablonok', url: '/' }}>
         <ErrorState message={error || 'Sablon nem található'} onRetry={loadTemplate} />
       </Page>
     );
@@ -89,7 +89,7 @@ export default function EditTemplatePage() {
     <Frame>
       <Page
         title={`Sablon szerkesztése: ${template.name}`}
-        breadcrumbs={[{ content: 'Sablonok', url: '/' }]}
+        backAction={{ content: 'Sablonok', url: '/' }}
         narrowWidth
       >
         <Layout>

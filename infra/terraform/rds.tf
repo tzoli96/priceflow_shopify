@@ -66,7 +66,7 @@ resource "aws_db_instance" "main" {
   publicly_accessible    = false # NEM érhető el az internetről!
 
   # Backup beállítások
-  backup_retention_period = 7          # 7 napig tartjuk meg a backup-okat
+  backup_retention_period = 1          # 1 napig tartjuk meg a backup-okat (Free Tier limit)
   backup_window           = "03:00-04:00" # Hajnali 3-4 között készül a backup (UTC)
   maintenance_window      = "Mon:04:00-Mon:05:00" # Karbantartás hétfőn hajnali 4-5 (UTC)
 

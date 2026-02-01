@@ -45,6 +45,7 @@ export class ShopHeaderInterceptor implements NestInterceptor {
     '/api/shopify/dev-setup', // Dev shop setup
     '/api/upload',         // File uploads (S3)
     '/api/pricing',        // Pricing API (storefront)
+    '/api/health',         // ALB health check
   ];
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {

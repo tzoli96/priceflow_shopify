@@ -100,7 +100,8 @@ export function ProductConfigurator({
         // Initialize field values with defaults
         if (info.hasTemplate && info.template) {
           const initialValues: Record<string, any> = {};
-          info.template.fields.forEach((field) => {
+          const allFields = (info.template.sections || []).flatMap((s) => s.fields || []);
+          allFields.forEach((field) => {
             if (field.type === 'NUMBER') {
               initialValues[field.key] = field.validation?.min || 0;
             } else if (field.type === 'CHECKBOX') {
@@ -133,7 +134,8 @@ export function ProductConfigurator({
 
     // Convert field values to numbers for calculation
     const numericValues: Record<string, number> = {};
-    templateInfo.template.fields.forEach((field) => {
+    const allFields = (templateInfo.template.sections || []).flatMap((s) => s.fields || []);
+    allFields.forEach((field) => {
       if (field.useInFormula) {
         const value = fieldValues[field.key];
         if (field.type === 'NUMBER') {
@@ -211,7 +213,8 @@ export function ProductConfigurator({
 
     // Build properties object with field labels and values
     const properties: Record<string, any> = {};
-    templateInfo.template.fields.forEach((field) => {
+    const allFields = (templateInfo.template.sections || []).flatMap((s) => s.fields || []);
+    allFields.forEach((field) => {
       const value = fieldValues[field.key];
       if (value !== undefined && value !== '') {
         if (field.type === 'SELECT' || field.type === 'RADIO') {
@@ -240,8 +243,8 @@ export function ProductConfigurator({
     }
 
     // Add notes if provided
-    if (notes && template.hasNotesField) {
-      properties[template.notesFieldLabel || 'Megjegyzés'] = notes;
+    if (notes && templateInfo.template.hasNotesField) {
+      properties[templateInfo.template.notesFieldLabel || 'Megjegyzés'] = notes;
     }
 
     onAddToCart?.({
@@ -261,7 +264,8 @@ export function ProductConfigurator({
   const isFormValid = () => {
     if (!templateInfo?.template) return false;
 
-    for (const field of templateInfo.template.fields) {
+    const allFields = (templateInfo.template.sections || []).flatMap((s) => s.fields || []);
+    for (const field of allFields) {
       if (field.required) {
         const value = fieldValues[field.key];
         if (value === undefined || value === '' || value === null) {
@@ -300,6 +304,7 @@ export function ProductConfigurator({
   }
 
   const template = templateInfo.template;
+  const allFields = (template.sections || []).flatMap((s) => s.fields || []);
 
   return (
     <div className={`priceflow-configurator ${className}`}>
@@ -315,7 +320,7 @@ export function ProductConfigurator({
 
           {/* Form fields */}
           <div className="priceflow-fields space-y-6">
-            {template.fields
+            {allFields
               .sort((a, b) => a.order - b.order)
               .map((field) => (
                 <ConfiguratorField
@@ -404,7 +409,7 @@ export function ProductConfigurator({
           <ConfigSummary
             productTitle={productTitle}
             productImage={productImage}
-            fields={template.fields}
+            fields={allFields}
             fieldValues={fieldValues}
             quantity={quantity}
             isExpress={isExpress}

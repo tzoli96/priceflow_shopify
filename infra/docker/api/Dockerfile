@@ -9,39 +9,19 @@ RUN corepack enable && corepack prepare pnpm@latest --activate && \
 WORKDIR /usr/src/app
 
 # Copy package files and pnpm config
-COPY package.json pnpm-lock.yaml* .npmrc* ./
+COPY apps/api/package.json apps/api/pnpm-lock.yaml ./
 
 # Copy Prisma schema (needed for postinstall script)
-COPY prisma ./prisma
+COPY apps/api/prisma ./prisma
+
+# Copy Prisma config
+COPY apps/api/prisma.config.ts ./prisma.config.ts
 
 # Dependencies stage - install all dependencies
 FROM base AS deps
 
 # Install dependencies (postinstall will run prisma generate)
 RUN pnpm install
-
-# Development stage
-FROM base AS development
-
-# Copy node_modules from deps stage
-COPY --from=deps /usr/src/app/node_modules ./node_modules
-
-# Copy application code
-COPY . .
-
-# Copy and setup entrypoint
-COPY docker-entrypoint.sh /usr/local/bin/
-RUN chmod +x /usr/local/bin/docker-entrypoint.sh
-
-# Expose port
-EXPOSE 4000
-
-# Set environment to development
-ENV NODE_ENV=development
-
-# Use entrypoint for migrations and startup
-ENTRYPOINT ["docker-entrypoint.sh"]
-CMD ["pnpm", "start:dev"]
 
 # Builder stage - build application
 FROM base AS builder
@@ -50,7 +30,7 @@ FROM base AS builder
 COPY --from=deps /usr/src/app/node_modules ./node_modules
 
 # Copy application code
-COPY . .
+COPY apps/api/ .
 
 # Build application
 RUN pnpm build
@@ -71,14 +51,18 @@ WORKDIR /usr/src/app
 COPY --from=builder /usr/src/app/package.json ./package.json
 COPY --from=builder /usr/src/app/pnpm-lock.yaml ./pnpm-lock.yaml
 
+# Copy Prisma schema and config (needed for postinstall prisma generate and migrate deploy)
+COPY --from=builder /usr/src/app/prisma ./prisma
+COPY --from=builder /usr/src/app/prisma.config.ts ./prisma.config.ts
+
 # Install production dependencies only
 RUN pnpm install --prod --frozen-lockfile
 
 # Copy built application
-COPY --from=builder --chown=nestjs:nodejs /usr/src/app/dist ./dist
+COPY --from=builder --chown=api:nodejs /usr/src/app/dist ./dist
 
 # Switch to non-root user
-USER nestjs
+USER api
 
 # Expose port
 EXPOSE 4000
@@ -87,5 +71,5 @@ EXPOSE 4000
 ENV NODE_ENV=production
 ENV PORT=4000
 
-# Start production server
-CMD ["node", "dist/main"]
+# Run migrations and start production server
+CMD ["sh", "-c", "pnpm prisma migrate deploy && node dist/src/main"]

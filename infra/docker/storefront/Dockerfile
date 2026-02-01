@@ -7,8 +7,9 @@ RUN corepack enable && corepack prepare pnpm@latest --activate
 # Set working directory
 WORKDIR /usr/src/app
 
-# Copy package files and pnpm config
-COPY package.json pnpm-lock.yaml* .npmrc* ./
+# Copy storefront package files
+COPY apps/storefront/package.json ./package.json
+COPY apps/storefront/pnpm-lock.yaml ./pnpm-lock.yaml
 
 # Dependencies stage - install all dependencies
 FROM base AS deps
@@ -16,32 +17,14 @@ FROM base AS deps
 # Install dependencies
 RUN pnpm install --frozen-lockfile
 
-# Development stage
-FROM base AS development
-
-# Copy node_modules from deps stage
-COPY --from=deps /usr/src/app/node_modules ./node_modules
-
-# Copy application code
-COPY . .
-
-# Expose port
-EXPOSE 3000
-
-# Set environment to development
-ENV NODE_ENV=development
-
-# Start development server
-CMD ["pnpm", "dev"]
-
 # Builder stage - build application
 FROM base AS builder
 
 # Copy node_modules from deps stage
 COPY --from=deps /usr/src/app/node_modules ./node_modules
 
-# Copy application code
-COPY . .
+# Copy storefront application code
+COPY apps/storefront/ .
 
 # Build application
 RUN pnpm build

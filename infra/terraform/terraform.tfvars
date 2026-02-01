@@ -24,8 +24,10 @@ db_name           = "priceflow"
 db_instance_class = "db.t3.micro"         # Free Tier
 
 # Shopify
-shopify_api_key    = "a2087c36b3d88c748e9e2339ebab5527"
-shopify_api_secret = "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"
+shopify_api_key         = "a2087c36b3d88c748e9e2339ebab5527"
+shopify_api_secret      = "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"
+shopify_organization_id = "4577134"
+shop_url                = "priceflow-dev.myshopify.com"
 
 # Alkalmazás titkos kulcsok
 jwt_secret     = "43ad074df37e18f8348154906f3caf278eb13c229c1840491770df91dc0b4159"

@@ -166,7 +166,7 @@ export function TemplateList({
 
                     {/* Metadata */}
                     <InlineStack gap="400" wrap={false}>
-                      <Badge tone="info">{fieldsCount} mező</Badge>
+                      <Badge tone="info">{`${fieldsCount} mező`}</Badge>
                       <Badge>{getScopeLabel(template)}</Badge>
                       <Text as="span" variant="bodySm" tone="subdued">
                         Módosítva: {formatRelativeTime(updatedAt)}

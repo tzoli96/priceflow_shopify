@@ -9,17 +9,17 @@ import { useRouter } from 'next/navigation';
 import { Page, Layout, Toast, Frame } from '@shopify/polaris';
 import { TemplateForm } from '@/components/templates/TemplateForm';
 import { api } from '@/lib/api';
-import type { CreateTemplateDto } from '@/types/template';
+import type { CreateTemplateDto, UpdateTemplateDto } from '@/types/template';
 
 export default function NewTemplatePage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  const handleSubmit = async (data: CreateTemplateDto) => {
+  const handleSubmit = async (data: CreateTemplateDto | UpdateTemplateDto) => {
     try {
       setIsSubmitting(true);
-      const template = await api.templates.create(data);
+      const template = await api.templates.create(data as CreateTemplateDto);
       setToastMessage('Sablon sikeresen létrehozva!');
 
       // Redirect to the template list after a short delay
@@ -43,7 +43,7 @@ export default function NewTemplatePage() {
     <Frame>
       <Page
         title="Új sablon létrehozása"
-        breadcrumbs={[{ content: 'Sablonok', url: '/' }]}
+        backAction={{ content: 'Sablonok', url: '/' }}
         narrowWidth
       >
         <Layout>

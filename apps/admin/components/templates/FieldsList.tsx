@@ -235,10 +235,10 @@ export const FieldsList: React.FC<FieldsListProps> = ({ fields, onChange }) => {
                     <Badge tone="warning">{displayStyleLabel}</Badge>
                   )}
                   {hasOptions && (
-                    <Badge>{String(field.options!.length)} opció</Badge>
+                    <Badge>{`${field.options!.length} opció`}</Badge>
                   )}
                   {hasPresets && (
-                    <Badge tone="success">{String(field.presetValues!.length)} gyors érték</Badge>
+                    <Badge tone="success">{`${field.presetValues!.length} gyors érték`}</Badge>
                   )}
                   {field.helpText && <Badge tone="info">Segítség</Badge>}
                 </InlineStack>
