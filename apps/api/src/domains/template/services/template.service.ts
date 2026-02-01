@@ -339,6 +339,11 @@ export class TemplateService {
     if (dto.expressLabel !== undefined) template.expressLabel = dto.expressLabel;
     if (dto.normalLabel !== undefined) template.normalLabel = dto.normalLabel;
 
+    // Update notes field options
+    if (dto.hasNotesField !== undefined) template.hasNotesField = dto.hasNotesField;
+    if (dto.notesFieldLabel !== undefined) template.notesFieldLabel = dto.notesFieldLabel;
+    if (dto.notesFieldPlaceholder !== undefined) template.notesFieldPlaceholder = dto.notesFieldPlaceholder;
+
     return this.templateRepository.update(template);
   }
 

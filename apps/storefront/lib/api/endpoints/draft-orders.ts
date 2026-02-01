@@ -18,6 +18,31 @@ import type {
  *
  * Clean, typed interface for Draft Orders operations
  */
+/**
+ * Cart item for creating draft order from cart
+ */
+export interface CartItem {
+  id: string;
+  variant_id: string;
+  product_title: string;
+  image?: string;
+  final_price: number;
+  final_line_price: number;
+  quantity: number;
+  properties?: Record<string, any>;
+}
+
+/**
+ * Request body for creating draft order from cart
+ */
+export interface CreateFromCartRequest {
+  items: CartItem[];
+  customerId?: string;
+  email?: string;
+  note?: string;
+  tags?: string[];
+}
+
 export const draftOrdersApi = {
   /**
    * Create a new Draft Order with custom pricing
@@ -30,6 +55,21 @@ export const draftOrdersApi = {
   async create(data: CreateDraftOrderRequest): Promise<DraftOrderResponse> {
     return apiClient.post<DraftOrderResponse, CreateDraftOrderRequest>(
       '/api/draft-orders/create',
+      data
+    );
+  },
+
+  /**
+   * Create a new Draft Order from cart items
+   *
+   * POST /api/draft-orders/create-from-cart
+   *
+   * @param data - Cart items and optional metadata
+   * @returns Created Draft Order with invoice URL
+   */
+  async createFromCart(data: CreateFromCartRequest): Promise<DraftOrderResponse> {
+    return apiClient.post<DraftOrderResponse, CreateFromCartRequest>(
+      '/api/draft-orders/create-from-cart',
       data
     );
   },

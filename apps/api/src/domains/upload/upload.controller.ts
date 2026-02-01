@@ -5,13 +5,16 @@ import {
   Get,
   Param,
   Query,
+  Res,
   UploadedFile,
   UploadedFiles,
   UseInterceptors,
   BadRequestException,
+  NotFoundException,
   Logger,
 } from '@nestjs/common';
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
+import type { Response } from 'express';
 import { S3Service, UploadResult } from './services/s3.service';
 
 interface UploadResponse {
@@ -135,6 +138,49 @@ export class UploadController {
   }
 
   /**
+   * Upload customer graphic file (storefront)
+   * POST /upload/graphic
+   * Accepts images, PDF, AI, EPS, SVG - up to 50 MB
+   */
+  @Post('graphic')
+  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 50 * 1024 * 1024 } }))
+  async uploadGraphic(
+    @UploadedFile() file: Express.Multer.File,
+  ): Promise<UploadResponse> {
+    if (!file) {
+      throw new BadRequestException('No file provided');
+    }
+
+    // Broader MIME validation for design files
+    const allowedGraphicTypes = [
+      'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml',
+      'application/pdf',
+      'application/postscript',           // AI, EPS
+      'application/illustrator',
+      'application/eps',
+      'image/x-eps',
+      'application/octet-stream',         // fallback for AI/EPS/CDR
+    ];
+    if (!allowedGraphicTypes.includes(file.mimetype)) {
+      throw new BadRequestException(
+        `Invalid file type: ${file.mimetype}. Allowed: images, PDF, AI, EPS, SVG`,
+      );
+    }
+
+    const result = await this.s3Service.uploadFile(file, {
+      folder: 'graphics',
+    });
+
+    this.logger.log(`Graphic uploaded: ${result.url} (${file.originalname})`);
+
+    return {
+      success: true,
+      data: result,
+      message: 'Graphic uploaded successfully',
+    };
+  }
+
+  /**
    * Upload option image for SELECT/RADIO fields
    * POST /upload/option-image
    */
@@ -204,6 +250,42 @@ export class UploadController {
       exists,
       url: exists ? this.s3Service.getPublicUrl(decodedKey) : undefined,
     };
+  }
+
+  /**
+   * Proxy endpoint to serve S3 files (solves CORS issues with localhost)
+   * GET /upload/file/:bucket/*
+   */
+  @Get('file/:bucket/*')
+  async proxyFile(
+    @Param('bucket') bucket: string,
+    @Param() params: Record<string, string>,
+    @Res() res: Response,
+  ): Promise<void> {
+    // Get the file path from wildcard param (everything after bucket/)
+    const key = params['0'] || params['*'];
+
+    if (!key) {
+      throw new BadRequestException('No file key provided');
+    }
+
+    try {
+      const stream = await this.s3Service.getFileStream(key);
+      const metadata = await this.s3Service.getFileMetadata(key);
+
+      // Set appropriate headers
+      res.set({
+        'Content-Type': metadata.contentType || 'application/octet-stream',
+        'Content-Length': metadata.contentLength,
+        'Cache-Control': 'public, max-age=31536000', // Cache for 1 year
+        'Access-Control-Allow-Origin': '*',
+      });
+
+      stream.pipe(res);
+    } catch (error) {
+      this.logger.error(`Failed to proxy file: ${key}`, error);
+      throw new NotFoundException('File not found');
+    }
   }
 
   /**

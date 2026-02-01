@@ -121,61 +121,28 @@ export default function Home() {
   };
 
   // Handle add to cart from configurator
-  const handleAddToCart = async (data: AddToCartData) => {
-    try {
-      // Send message to parent window (Shopify theme)
-      window.parent.postMessage(
-        {
-          type: 'PRICEFLOW_ADD_TO_CART',
-          payload: {
-            variantId: data.variantId,
-            quantity: data.quantity,
-            price: data.finalPrice,
-            linePrice: data.finalLinePrice,
-            properties: data.properties,
-            productTitle: data.productTitle,
-            productImage: data.productImage,
-          },
+  // Sends postMessage matching the theme.liquid handler:
+  //   data.type === 'ADD_TO_CART'
+  //   data.item  === { variant_id, product_title, image, final_price, quantity, properties }
+  const handleAddToCart = (data: AddToCartData) => {
+    const message = {
+      type: 'ADD_TO_CART',
+      item: {
+        variant_id: data.variantId,
+        product_title: data.productTitle,
+        image: data.productImage,
+        final_price: data.finalPrice,
+        quantity: data.quantity,
+        properties: {
+          ...data.properties,
+          _templateId: data.templateId,
+          _isExpress: data.isExpress ? 'Igen' : undefined,
         },
-        '*'
-      );
+      },
+    };
 
-      // Create draft order via API for custom pricing
-      const response = await fetch('/api/draft-orders/from-cart', {
-        method: 'POST',
-        headers: {
-          'X-Shopify-Shop': shop,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          items: [
-            {
-              variantId: data.variantId,
-              quantity: data.quantity,
-              customPrice: data.finalPrice,
-              customTitle: data.productTitle,
-              properties: data.properties,
-            },
-          ],
-        }),
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        // Notify parent about checkout URL
-        if (result.invoiceUrl) {
-          window.parent.postMessage(
-            {
-              type: 'PRICEFLOW_CHECKOUT',
-              payload: { invoiceUrl: result.invoiceUrl },
-            },
-            '*'
-          );
-        }
-      }
-    } catch (err) {
-      console.error('Add to cart error:', err);
-    }
+    window.parent.postMessage(message, '*');
+    console.log('[PriceFlow] ADD_TO_CART sent:', message.item.product_title, message.item.final_price);
   };
 
   if (loading) {

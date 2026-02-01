@@ -1,6 +1,6 @@
 /**
  * ProductCardSelector Styles
- * Gazdag termék/anyag választó kártyák
+ * Dekormunka design - 1:1 match
  */
 
 .container {
@@ -16,7 +16,7 @@
 }
 
 .required {
-  color: #d72c0d;
+  color: #e91e8c;
   margin-left: 4px;
 }
 
@@ -44,8 +44,8 @@
   display: flex;
   flex-direction: column;
   background: #ffffff;
-  border: 2px solid #e1e3e5;
-  border-radius: 12px;
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
   padding: 0;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -54,13 +54,13 @@
 }
 
 .card:hover {
-  border-color: #c9cccf;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  border-color: #e91e8c;
+  box-shadow: 0 4px 12px rgba(233, 30, 140, 0.1);
 }
 
 .card.selected {
-  border-color: #d72c0d;
-  box-shadow: 0 0 0 1px #d72c0d;
+  border-color: #e91e8c;
+  border-width: 2px;
 }
 
 /* Badge */
@@ -68,75 +68,101 @@
   position: absolute;
   top: 12px;
   left: 12px;
-  background: linear-gradient(135deg, #d72c0d 0%, #b8251c 100%);
+  background: linear-gradient(135deg, #e91e8c 0%, #c4177a 100%);
   color: white;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  padding: 4px 10px;
+  padding: 4px 8px;
   border-radius: 4px;
-  z-index: 2;
-  box-shadow: 0 2px 4px rgba(215, 44, 13, 0.3);
+  z-index: 3;
 }
 
-/* Checkmark */
-.checkmark {
+/* Radio Button Selection Indicator */
+.radioIndicator {
   position: absolute;
   top: 12px;
   right: 12px;
-  width: 24px;
-  height: 24px;
-  border: 2px solid #c9cccf;
+  width: 22px;
+  height: 22px;
+  border: 2px solid #d1d1d1;
   border-radius: 50%;
   background: white;
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 2;
+  z-index: 3;
   transition: all 0.2s ease;
 }
 
-.checkmarkSelected {
-  background: #d72c0d;
-  border-color: #d72c0d;
+.card:hover .radioIndicator {
+  border-color: #e91e8c;
 }
 
-.checkmark svg {
-  width: 14px;
-  height: 14px;
-  color: white;
+.radioIndicator.selected {
+  background: #e91e8c;
+  border-color: #e91e8c;
 }
 
-/* Images */
-.imagesRow {
-  display: flex;
-  gap: 8px;
-  padding: 48px 16px 16px;
-  background: #f9fafb;
-  border-bottom: 1px solid #e1e3e5;
-}
-
-.mainImage,
-.patternImage {
-  flex: 1;
-  aspect-ratio: 1;
-  border-radius: 8px;
-  overflow: hidden;
+.radioIndicatorDot {
+  width: 8px;
+  height: 8px;
   background: white;
-  border: 1px solid #e1e3e5;
+  border-radius: 50%;
+  opacity: 0;
+  transition: opacity 0.2s ease;
 }
 
-.mainImage img,
+.radioIndicator.selected .radioIndicatorDot {
+  opacity: 1;
+}
+
+/* Image Container */
+.imageContainer {
+  position: relative;
+  width: 100%;
+  padding-top: 75%; /* 4:3 aspect ratio */
+  background: #f8f8f8;
+  overflow: hidden;
+}
+
+.mainImage {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.mainImage img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+/* Pattern Image - Overlaid on bottom-right */
+.patternImage {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  width: 48px;
+  height: 48px;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 2px solid white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  z-index: 2;
+}
+
 .patternImage img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-}
-
-.patternImage {
-  max-width: 60px;
-  flex: 0 0 60px;
 }
 
 /* Content */
@@ -149,29 +175,33 @@
 }
 
 .title {
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 700;
   color: #1a1a1a;
   margin: 0;
   line-height: 1.3;
 }
 
+.card.selected .title {
+  color: #e91e8c;
+}
+
 .description {
-  font-size: 13px;
-  color: #6b7177;
+  font-size: 12px;
+  color: #666666;
   margin: 0;
   line-height: 1.5;
 }
 
 /* HTML Content */
 .htmlContent {
-  font-size: 13px;
+  font-size: 12px;
   color: #4a4a4a;
   line-height: 1.5;
 }
 
 .htmlContent p {
-  margin: 0 0 8px 0;
+  margin: 0 0 6px 0;
 }
 
 .htmlContent p:last-child {
@@ -183,63 +213,57 @@
   color: #1a1a1a;
 }
 
-.htmlContent ul,
-.htmlContent ol {
-  margin: 8px 0;
-  padding-left: 20px;
-}
-
-.htmlContent li {
-  margin-bottom: 4px;
-}
-
 /* Features */
 .features {
   list-style: none;
   padding: 0;
-  margin: 8px 0 0 0;
+  margin: 4px 0 0 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
+  flex: 1;
 }
 
 .features li {
   display: flex;
   align-items: flex-start;
   gap: 6px;
-  font-size: 12px;
+  font-size: 11px;
   color: #4a4a4a;
   line-height: 1.4;
 }
 
 .bullet {
-  color: #d72c0d;
+  color: #e91e8c;
   font-weight: bold;
   flex-shrink: 0;
+  font-size: 14px;
+  line-height: 1;
+  margin-top: 1px;
 }
 
 /* Price Footer */
 .priceFooter {
   padding: 12px 16px;
-  background: #f9fafb;
-  border-top: 1px solid #e1e3e5;
-  text-align: center;
+  border-top: 1px solid #f0f0f0;
+  text-align: left;
 }
 
 .price {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 700;
-  color: #d72c0d;
+  color: #e91e8c;
 }
 
 .included {
   font-size: 13px;
-  color: #6b7177;
+  font-weight: 600;
+  color: #22c55e;
 }
 
 /* Error */
 .error {
-  color: #d72c0d;
+  color: #ef4444;
   font-size: 13px;
   margin-top: 8px;
 }

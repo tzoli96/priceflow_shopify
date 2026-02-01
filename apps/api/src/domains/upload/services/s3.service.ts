@@ -28,10 +28,13 @@ export class S3Service {
   private readonly s3Client: S3Client;
   private readonly bucket: string;
   private readonly endpointUrl: string;
+  private readonly publicUrl: string | null;
 
   constructor() {
     this.bucket = process.env.S3_BUCKET_NAME || 'priceflow-uploads';
     this.endpointUrl = process.env.AWS_ENDPOINT_URL || 'http://localstack:4566';
+    // Optional: separate public URL for browser access (e.g., https://app.teszt.uk/s3)
+    this.publicUrl = process.env.S3_PUBLIC_URL || null;
 
     this.s3Client = new S3Client({
       endpoint: this.endpointUrl,
@@ -43,7 +46,7 @@ export class S3Service {
       forcePathStyle: true, // Required for LocalStack
     });
 
-    this.logger.log(`S3Service initialized with bucket: ${this.bucket}`);
+    this.logger.log(`S3Service initialized with bucket: ${this.bucket}, publicUrl: ${this.publicUrl || 'not set'}`);
   }
 
   /**
@@ -185,16 +188,53 @@ export class S3Service {
   }
 
   /**
+   * Get file as readable stream (for proxying)
+   */
+  async getFileStream(key: string): Promise<NodeJS.ReadableStream> {
+    const command = new GetObjectCommand({
+      Bucket: this.bucket,
+      Key: key,
+    });
+
+    const response = await this.s3Client.send(command);
+    return response.Body as NodeJS.ReadableStream;
+  }
+
+  /**
+   * Get file metadata
+   */
+  async getFileMetadata(key: string): Promise<{ contentType?: string; contentLength?: number }> {
+    const command = new HeadObjectCommand({
+      Bucket: this.bucket,
+      Key: key,
+    });
+
+    const response = await this.s3Client.send(command);
+    return {
+      contentType: response.ContentType,
+      contentLength: response.ContentLength,
+    };
+  }
+
+  /**
    * Get public URL for a file
-   * For LocalStack, we need to use the external endpoint
+   * Uses S3_PUBLIC_URL if set, otherwise uses API proxy for LocalStack
    */
   getPublicUrl(key: string): string {
-    // For LocalStack in development, use localhost
-    const isLocalStack = this.endpointUrl.includes('localstack');
-    if (isLocalStack) {
-      // Use localhost:4566 for external access
-      return `http://localhost:4566/${this.bucket}/${key}`;
+    // If a public URL is configured, use it (for reverse proxy setups)
+    if (this.publicUrl) {
+      return `${this.publicUrl}/${this.bucket}/${key}`;
     }
+
+    // For LocalStack in development, use API proxy endpoint
+    const isLocalStack = this.endpointUrl.includes('localstack') || this.endpointUrl.includes('localhost');
+    if (isLocalStack) {
+      // Use API proxy endpoint to avoid CORS issues
+      // The API_URL should be set to the public API URL (e.g., https://app.teszt.uk/api)
+      const apiUrl = process.env.API_URL || '/api';
+      return `${apiUrl}/upload/file/${this.bucket}/${key}`;
+    }
+
     // For production S3
     return `https://${this.bucket}.s3.${process.env.AWS_REGION || 'eu-central-1'}.amazonaws.com/${key}`;
   }

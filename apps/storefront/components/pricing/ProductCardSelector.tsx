@@ -1,7 +1,13 @@
 /**
  * ProductCardSelector Component
- * Gazdag termék/anyag választó kártyák PRODUCT_CARD mezőkhöz
- * Támogatja: badge, fő kép, minta kép, HTML tartalom, jellemzők, ár
+ * Dekormunka design - 1:1 match
+ *
+ * Features:
+ * - Radio button style selection indicator
+ * - Main image with pattern overlay
+ * - Badge support
+ * - Bullet point features
+ * - Price display
  */
 
 'use client';
@@ -70,23 +76,17 @@ export const ProductCardSelector: React.FC<ProductCardSelectorProps> = ({
                 </div>
               )}
 
-              {/* Selection indicator */}
-              <div className={`${styles.checkmark} ${isSelected ? styles.checkmarkSelected : ''}`}>
-                {isSelected && (
-                  <svg viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                  </svg>
-                )}
+              {/* Radio Button Selection Indicator */}
+              <div className={`${styles.radioIndicator} ${isSelected ? styles.selected : ''}`}>
+                <div className={styles.radioIndicatorDot} />
               </div>
 
-              {/* Images row */}
-              {(hasMainImage || hasPatternImage) && (
-                <div className={styles.imagesRow}>
-                  {hasMainImage && (
-                    <div className={styles.mainImage}>
-                      <img src={option.imageUrl} alt={option.label} loading="lazy" />
-                    </div>
-                  )}
+              {/* Image Container with Pattern Overlay */}
+              {hasMainImage && (
+                <div className={styles.imageContainer}>
+                  <div className={styles.mainImage}>
+                    <img src={option.imageUrl} alt={option.label} loading="lazy" />
+                  </div>
                   {hasPatternImage && (
                     <div className={styles.patternImage}>
                       <img src={option.patternUrl} alt={`${option.label} minta`} loading="lazy" />

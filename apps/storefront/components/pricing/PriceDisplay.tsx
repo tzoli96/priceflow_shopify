@@ -85,8 +85,8 @@ export function PriceDisplay({
             >
               <span className="priceflow-breakdown-label">{item.label}</span>
               <span className="priceflow-breakdown-value">
-                {item.value < 0 ? '-' : ''}
-                {formatPrice(Math.abs(item.value))}
+                {item.type !== 'total' && item.type !== 'base' && item.value > 0 ? '+' : ''}
+                {formatPrice(item.value)}
               </span>
             </div>
           ))}

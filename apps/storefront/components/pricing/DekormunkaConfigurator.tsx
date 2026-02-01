@@ -23,6 +23,7 @@ import type {
 } from '@/types/pricing';
 import { FileUpload } from './FileUpload';
 import { SectionRenderer } from './SectionRenderer';
+import { CollapsibleSection } from './CollapsibleSection';
 
 interface DekormunkaConfiguratorProps {
   productId: string;
@@ -72,6 +73,7 @@ export function DekormunkaConfigurator({
   const [isExpress, setIsExpress] = useState(false);
   const [notes, setNotes] = useState('');
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [addedToCart, setAddedToCart] = useState(false);
 
   // Price calculation state
   const [priceResult, setPriceResult] = useState<PriceCalculationResult | null>(null);
@@ -99,12 +101,24 @@ export function DekormunkaConfigurator({
         // Initialize field values with defaults
         if (info.hasTemplate && info.template) {
           const initialValues: Record<string, any> = {};
-          info.template.fields.forEach((field) => {
+          // Get all fields from sections
+          const allFields = (info.template.sections || []).flatMap((s) => s.fields || []);
+          allFields.forEach((field) => {
             if (field.type === 'NUMBER') {
               initialValues[field.key] = field.validation?.min || 0;
             } else if (field.type === 'CHECKBOX') {
               initialValues[field.key] = false;
-            } else if (field.type === 'SELECT' || field.type === 'RADIO') {
+            } else if (field.type === 'EXTRAS') {
+              // EXTRAS is multi-select, initialize as empty array
+              initialValues[field.key] = [];
+            } else if (
+              field.type === 'SELECT' ||
+              field.type === 'RADIO' ||
+              field.type === 'PRODUCT_CARD' ||
+              field.type === 'DELIVERY_TIME' ||
+              field.type === 'GRAPHIC_SELECT'
+            ) {
+              // All option-based fields get first option as default
               initialValues[field.key] = field.options?.[0]?.value || '';
             } else {
               initialValues[field.key] = '';
@@ -127,18 +141,33 @@ export function DekormunkaConfigurator({
   const calculatePrice = useCallback(async () => {
     if (!templateInfo?.hasTemplate || !templateInfo.template) return;
 
-    const numericValues: Record<string, number> = {};
-    templateInfo.template.fields.forEach((field) => {
-      if (field.useInFormula) {
-        const value = fieldValues[field.key];
-        if (field.type === 'NUMBER') {
+    const numericValues: Record<string, any> = {};
+    // Get all fields from sections - send ALL fields, not just useInFormula
+    // Backend needs all option-based fields to calculate their prices
+    const allFields = (templateInfo.template.sections || []).flatMap((s) => s.fields || []);
+    allFields.forEach((field) => {
+      const value = fieldValues[field.key];
+      if (field.type === 'NUMBER') {
+        // Only include NUMBER fields if useInFormula is true
+        if (field.useInFormula) {
           numericValues[field.key] = Number(value) || 0;
-        } else if (field.type === 'CHECKBOX') {
-          numericValues[field.key] = value ? 1 : 0;
-        } else if (field.type === 'SELECT' || field.type === 'RADIO') {
-          const option = field.options?.find((o) => o.value === value);
-          numericValues[field.key] = option?.price || 0;
         }
+      } else if (field.type === 'CHECKBOX') {
+        if (field.useInFormula) {
+          numericValues[field.key] = value ? 1 : 0;
+        }
+      } else if (field.type === 'EXTRAS') {
+        // EXTRAS is multi-select - always send to calculate option prices
+        numericValues[field.key] = Array.isArray(value) ? value : [];
+      } else if (
+        field.type === 'SELECT' ||
+        field.type === 'RADIO' ||
+        field.type === 'PRODUCT_CARD' ||
+        field.type === 'DELIVERY_TIME' ||
+        field.type === 'GRAPHIC_SELECT'
+      ) {
+        // All option-based fields - always send to calculate option prices
+        numericValues[field.key] = value || '';
       }
     });
 
@@ -206,16 +235,44 @@ export function DekormunkaConfigurator({
   const getFieldDisplayValue = (field: TemplateField): string | null => {
     const value = fieldValues[field.key];
     if (value === undefined || value === '' || value === null) return null;
+    if (Array.isArray(value) && value.length === 0) return null;
 
     switch (field.type) {
       case 'NUMBER':
-        return `${value} ${field.key.includes('width') || field.key.includes('height') ? 'cm' : ''}`;
+        const unit = field.unit || (field.key.includes('width') || field.key.includes('height') ? 'cm' : '');
+        return `${value}${unit ? ` ${unit}` : ''}`;
+
       case 'SELECT':
       case 'RADIO':
+      case 'PRODUCT_CARD':
+      case 'DELIVERY_TIME':
+      case 'GRAPHIC_SELECT': {
         const option = field.options?.find((o) => o.value === value);
-        return option?.label || value;
+        if (!option) return value;
+        // Show label with price in parentheses if price > 0
+        if (option.price && option.price > 0) {
+          return `${option.label} (+${formatPrice(option.price)})`;
+        }
+        return option.label;
+      }
+
+      case 'EXTRAS': {
+        // Multiple selection - show all selected option labels with prices
+        if (!Array.isArray(value)) return null;
+        const selectedLabels = value.map((v) => {
+          const opt = field.options?.find((o) => o.value === v);
+          if (!opt) return v;
+          if (opt.price && opt.price > 0) {
+            return `${opt.label} (+${formatPrice(opt.price)})`;
+          }
+          return opt.label;
+        });
+        return selectedLabels.join(', ');
+      }
+
       case 'CHECKBOX':
         return value ? 'Igen' : 'Nem';
+
       default:
         return value.toString();
     }
@@ -226,7 +283,9 @@ export function DekormunkaConfigurator({
     if (!priceResult || !templateInfo?.template || quantityError) return;
 
     const properties: Record<string, any> = {};
-    templateInfo.template.fields.forEach((field) => {
+    // Get all fields from sections
+    const allFields = (templateInfo.template.sections || []).flatMap((s) => s.fields || []);
+    allFields.forEach((field) => {
       const displayValue = getFieldDisplayValue(field);
       if (displayValue) {
         properties[field.label] = displayValue;
@@ -247,6 +306,15 @@ export function DekormunkaConfigurator({
       properties[templateInfo.template.notesFieldLabel || 'Megjegyzés'] = notes;
     }
 
+    // Include uploaded graphic URL in properties
+    if (uploadedFile) {
+      const graphicUrl = (uploadedFile as any)._uploadedUrl;
+      if (graphicUrl) {
+        properties['_graphicUrl'] = graphicUrl;
+        properties['Grafika fájl'] = uploadedFile.name;
+      }
+    }
+
     onAddToCart?.({
       variantId,
       productTitle,
@@ -258,12 +326,16 @@ export function DekormunkaConfigurator({
       isExpress,
       templateId: templateInfo.template.id,
     });
+
+    setAddedToCart(true);
   };
 
   // Check if all required fields are filled
   const isFormValid = () => {
     if (!templateInfo?.template) return false;
-    for (const field of templateInfo.template.fields) {
+    // Get all fields from sections
+    const allFields = (templateInfo.template.sections || []).flatMap((s) => s.fields || []);
+    for (const field of allFields) {
       if (field.required) {
         const value = fieldValues[field.key];
         if (value === undefined || value === '' || value === null) return false;
@@ -274,10 +346,12 @@ export function DekormunkaConfigurator({
 
   // Calculate m² from width and height
   const calculateSquareMeters = (): number | null => {
-    const widthField = templateInfo?.template?.fields.find(f =>
+    // Get all fields from sections
+    const allFields = (templateInfo?.template?.sections || []).flatMap((s) => s.fields || []);
+    const widthField = allFields.find(f =>
       f.key.toLowerCase().includes('width') || f.key === 'szelesseg' || f.key === 'vizszintes'
     );
-    const heightField = templateInfo?.template?.fields.find(f =>
+    const heightField = allFields.find(f =>
       f.key.toLowerCase().includes('height') || f.key === 'magassag' || f.key === 'fuggoleges'
     );
 
@@ -317,6 +391,28 @@ export function DekormunkaConfigurator({
   // No template found
   if (!templateInfo?.hasTemplate || !templateInfo.template) {
     return null;
+  }
+
+  // Thank you screen after adding to cart
+  if (addedToCart) {
+    return (
+      <div className={`dekormunka-configurator ${className}`}>
+        <div className="dekormunka-thankyou">
+          <svg className="dekormunka-thankyou-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <h2 className="dekormunka-thankyou-title">Köszönjük a vásárlásod!</h2>
+          <p className="dekormunka-thankyou-text">A termék sikeresen a kosárba került.</p>
+          <button
+            type="button"
+            className="dekormunka-thankyou-button"
+            onClick={() => setAddedToCart(false)}
+          >
+            Új konfiguráció
+          </button>
+        </div>
+      </div>
+    );
   }
 
   const template = templateInfo.template;
@@ -440,9 +536,32 @@ export function DekormunkaConfigurator({
                 onFieldChange={handleFieldChange}
                 formatPrice={formatPrice}
                 builtInContent={section.builtInType ? getBuiltInContent() : undefined}
+                onFileSelect={setUploadedFile}
               />
             );
           })}
+
+          {/* Auto-generated Notes section when hasNotesField is true */}
+          {template.hasNotesField && !template.sections?.some(s => s.builtInType === 'NOTES') && (
+            <CollapsibleSection
+              number={sectionNumber + 1}
+              title={template.notesFieldLabel || 'Adj meg megjegyzést!'}
+              defaultOpen={true}
+              collapsible={true}
+              showNumber={true}
+            >
+              <div className="dekormunka-notes-section">
+                <label className="dekormunka-label">Megjegyzésed/kérés</label>
+                <textarea
+                  className="dekormunka-notes-textarea"
+                  placeholder={template.notesFieldPlaceholder || 'Írja ide megjegyzését, kérését...'}
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  rows={4}
+                />
+              </div>
+            </CollapsibleSection>
+          )}
         </div>
 
         {/* Right side - Summary sidebar */}
@@ -453,10 +572,11 @@ export function DekormunkaConfigurator({
             <div className="dekormunka-summary-list">
               {/* Size display */}
               {(() => {
-                const widthField = template.fields.find(f =>
+                const allFields = (template.sections || []).flatMap((s) => s.fields || []);
+                const widthField = allFields.find(f =>
                   f.key.toLowerCase().includes('width') || f.key === 'szelesseg' || f.key === 'vizszintes'
                 );
-                const heightField = template.fields.find(f =>
+                const heightField = allFields.find(f =>
                   f.key.toLowerCase().includes('height') || f.key === 'magassag' || f.key === 'fuggoleges'
                 );
 
@@ -476,7 +596,7 @@ export function DekormunkaConfigurator({
               })()}
 
               {/* Other fields (excluding size fields already shown) */}
-              {template.fields
+              {(template.sections || []).flatMap((s) => s.fields || [])
                 .filter(f => f.type !== 'NUMBER')
                 .sort((a, b) => a.order - b.order)
                 .map((field) => {

@@ -168,15 +168,29 @@ export const ConfigSummary: React.FC<ConfigSummaryProps> = ({
 
         {/* Price section */}
         <div className="p-4 bg-gray-50">
-          {/* Price breakdown */}
+          {/* Price breakdown - detailed */}
           {priceResult?.breakdown && priceResult.breakdown.length > 0 && (
-            <div className="space-y-1 mb-3 pb-3 border-b border-gray-200">
+            <div className="space-y-1.5 mb-3 pb-3 border-b border-gray-200">
               {priceResult.breakdown
                 .filter((item) => item.type !== 'total')
                 .map((item, index) => (
-                  <div key={index} className="flex justify-between text-xs text-gray-500">
-                    <span>{item.label}</span>
-                    <span>{formatPrice(item.value)}</span>
+                  <div
+                    key={index}
+                    className={`flex justify-between text-xs ${
+                      item.type === 'base'
+                        ? 'text-gray-600 font-medium'
+                        : item.type === 'calculation'
+                        ? 'text-blue-600 font-medium'
+                        : item.value < 0
+                        ? 'text-green-600'
+                        : 'text-gray-500'
+                    }`}
+                  >
+                    <span className="flex-1 pr-2">{item.label}</span>
+                    <span className="whitespace-nowrap">
+                      {item.value < 0 ? '' : '+'}
+                      {formatPrice(item.value)}
+                    </span>
                   </div>
                 ))}
             </div>

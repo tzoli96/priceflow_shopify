@@ -1,0 +1,165 @@
+{%- doc -%}
+  @param [limit] - {number}
+  @param [live_region] - {boolean}
+
+  The maximum number of items in the cart to display. If the number of items in the cart is greater than this limit, the
+  count will be displayed as "99+".
+
+  MODIFIED: Reads cart items from LocalStorage (custom-cart-items) instead of Shopify native cart.
+{%- enddoc -%}
+
+<div
+  ref="cartBubble"
+  class="cart-bubble visually-hidden"
+  data-priceflow-cart-bubble
+  data-maintain-ratio
+  data-skip-subtree-update
+>
+  <span class="cart-bubble__background"></span>
+  <span
+    ref="cartBubbleText"
+    id="cart-bubble-text"
+    class="cart-bubble__text"
+    {% if live_region %}
+      role="status"
+    {% endif %}
+  >
+    <span class="visually-hidden">
+      {{- 'accessibility.cart_count' | t -}}
+      : <span data-priceflow-cart-count-sr>0</span>
+    </span>
+    <span
+      class="cart-bubble__text-count hidden"
+      ref="cartBubbleCount"
+      aria-hidden="true"
+      data-testid="cart-bubble"
+      data-priceflow-cart-count
+      data-limit="{{ limit | default: 100 }}"
+    >
+      0
+    </span>
+  </span>
+</div>
+
+<script>
+  (function() {
+    'use strict';
+
+    const STORAGE_KEY = 'custom-cart-items';
+
+    /**
+     * Get cart items from LocalStorage
+     */
+    function getCartItems() {
+      try {
+        const items = localStorage.getItem(STORAGE_KEY);
+        return items ? JSON.parse(items) : [];
+      } catch (error) {
+        console.error('Failed to load cart items:', error);
+        return [];
+      }
+    }
+
+    /**
+     * Update cart bubble - SINGLE SOURCE OF TRUTH
+     * This is the ONLY function that should update cart bubble display
+     */
+    function updateCartBubble() {
+      // ALWAYS read fresh from localStorage
+      const items = getCartItems();
+      const itemCount = items.reduce((sum, item) => sum + (item.quantity || 0), 0);
+
+      console.log('[CartBubble] updateCartBubble called:', { itemCount, itemsLength: items.length });
+
+      // Find all cart bubble elements
+      const bubbles = document.querySelectorAll('[data-priceflow-cart-bubble]');
+
+      bubbles.forEach(function(bubble) {
+        const countElement = bubble.querySelector('[data-priceflow-cart-count]');
+        const countSR = bubble.querySelector('[data-priceflow-cart-count-sr]');
+        const textCount = bubble.querySelector('.cart-bubble__text-count');
+        const limit = parseInt(countElement?.dataset.limit || '100', 10);
+
+        if (!countElement) return;
+
+        // Update count based on localStorage (never use event data)
+        if (itemCount === 0) {
+          // Hide bubble if cart is empty
+          bubble.classList.add('visually-hidden');
+          textCount?.classList.add('hidden');
+          countElement.textContent = '';
+        } else {
+          // Show bubble with count
+          bubble.classList.remove('visually-hidden');
+          textCount?.classList.remove('hidden');
+
+          // Display count or 99+ if over limit
+          if (itemCount < limit) {
+            countElement.textContent = itemCount;
+            if (countSR) countSR.textContent = itemCount;
+          } else {
+            countElement.textContent = limit + '+';
+            if (countSR) countSR.textContent = limit + '+';
+          }
+
+          // Update data-maintain-ratio based on count
+          if (itemCount <= 99) {
+            bubble.setAttribute('data-maintain-ratio', '');
+          } else {
+            bubble.removeAttribute('data-maintain-ratio');
+          }
+        }
+
+        // Also update the cart-icon has-cart class
+        const cartIcon = bubble.closest('cart-icon');
+        if (cartIcon) {
+          cartIcon.classList.toggle('header-actions__cart-icon--has-cart', itemCount > 0);
+        }
+      });
+    }
+
+    // Prevent duplicate initialization
+    if (!window._priceflowCartBubbleInitialized) {
+      window._priceflowCartBubbleInitialized = true;
+
+      console.log('[CartBubble] Initializing cart bubble system');
+
+      // Initial update - run IMMEDIATELY and again after DOM is ready
+      updateCartBubble();
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function() {
+          updateCartBubble();
+        });
+      }
+
+      // Listen for cart updates (same page) - debounced
+      let cartUpdateTimeout = null;
+      window.addEventListener('cartUpdated', function(event) {
+        console.log('[CartBubble] cartUpdated event received');
+        // Debounce to prevent multiple rapid updates
+        if (cartUpdateTimeout) clearTimeout(cartUpdateTimeout);
+        cartUpdateTimeout = setTimeout(updateCartBubble, 10);
+      });
+
+      // Listen for storage changes (cross-tab sync)
+      window.addEventListener('storage', function(event) {
+        if (event.key === STORAGE_KEY) {
+          console.log('[CartBubble] storage event received');
+          updateCartBubble();
+        }
+      });
+
+      // Also listen for pageshow (back/forward navigation)
+      window.addEventListener('pageshow', function(event) {
+        if (event.persisted) {
+          console.log('[CartBubble] pageshow (bfcache) event');
+          updateCartBubble();
+        }
+      });
+    }
+
+    // Export function for manual updates
+    window.updatePriceflowCartBubble = updateCartBubble;
+  })();
+</script>

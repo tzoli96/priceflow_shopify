@@ -1,0 +1,30 @@
+# =============================================================================
+# Terraform .gitignore
+# =============================================================================
+
+# Terraform state fájlok - SOHA ne commitold!
+# Érzékeny adatokat tartalmaznak (jelszavak, kulcsok plain text-ben).
+*.tfstate
+*.tfstate.*
+
+# Terraform munka könyvtár (letöltött provider pluginek)
+.terraform/
+.terraform.lock.hcl
+
+# tfvars fájlok - jelszavakat és API kulcsokat tartalmaznak
+*.tfvars
+!terraform.tfvars
+
+# Crash log
+crash.log
+crash.*.log
+
+# Plan fájlok (binary, érzékeny adatokat tartalmazhatnak)
+*.tfplan
+*.plan
+
+# Override fájlok (lokális fejlesztéshez)
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json

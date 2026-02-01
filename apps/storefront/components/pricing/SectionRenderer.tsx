@@ -14,12 +14,14 @@ import type {
   LayoutType,
   BuiltInSectionType,
   FieldOption,
+  PresetValue,
 } from '@/types/pricing';
 import { CollapsibleSection } from './CollapsibleSection';
 import { CardSelector } from './CardSelector';
 import { ProductCardSelector } from './ProductCardSelector';
 import { DeliveryTimeSelector } from './DeliveryTimeSelector';
 import { ExtrasSelector } from './ExtrasSelector';
+import { GraphicSelector } from './GraphicSelector';
 
 interface SectionRendererProps {
   section: TemplateSection;
@@ -29,6 +31,7 @@ interface SectionRendererProps {
   formatPrice: (price: number) => string;
   // Built-in section content (for QUANTITY, EXPRESS, NOTES, FILE_UPLOAD)
   builtInContent?: React.ReactNode;
+  onFileSelect?: (file: File | null) => void;
 }
 
 export const SectionRenderer: React.FC<SectionRendererProps> = ({
@@ -38,14 +41,18 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
   onFieldChange,
   formatPrice,
   builtInContent,
+  onFileSelect,
 }) => {
   // If it's a built-in section type, render the provided content
   if (section.builtInType && builtInContent) {
     return (
       <CollapsibleSection
-        number={section.showNumber ? sectionNumber : 0}
+        number={sectionNumber}
         title={section.title}
+        description={section.description}
         defaultOpen={section.defaultOpen}
+        collapsible={section.collapsible}
+        showNumber={section.showNumber}
       >
         {builtInContent}
       </CollapsibleSection>
@@ -58,34 +65,34 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
 
     switch (section.layoutType) {
       case 'VERTICAL':
-        return <VerticalLayout fields={fields} fieldValues={fieldValues} onFieldChange={onFieldChange} formatPrice={formatPrice} />;
+        return <VerticalLayout fields={fields} fieldValues={fieldValues} onFieldChange={onFieldChange} formatPrice={formatPrice} onFileSelect={onFileSelect} />;
 
       case 'HORIZONTAL':
-        return <HorizontalLayout fields={fields} fieldValues={fieldValues} onFieldChange={onFieldChange} formatPrice={formatPrice} />;
+        return <HorizontalLayout fields={fields} fieldValues={fieldValues} onFieldChange={onFieldChange} formatPrice={formatPrice} onFileSelect={onFileSelect} />;
 
       case 'GRID':
         return <GridLayout fields={fields} fieldValues={fieldValues} onFieldChange={onFieldChange} formatPrice={formatPrice} columnsCount={section.columnsCount || 4} />;
 
       case 'SPLIT':
-        return <SplitLayout fields={fields} fieldValues={fieldValues} onFieldChange={onFieldChange} formatPrice={formatPrice} />;
+        return <SplitLayout fields={fields} fieldValues={fieldValues} onFieldChange={onFieldChange} formatPrice={formatPrice} presets={section.presets} />;
 
       case 'CHECKBOX_LIST':
         return <CheckboxListLayout fields={fields} fieldValues={fieldValues} onFieldChange={onFieldChange} formatPrice={formatPrice} />;
 
       default:
-        return <VerticalLayout fields={fields} fieldValues={fieldValues} onFieldChange={onFieldChange} formatPrice={formatPrice} />;
+        return <VerticalLayout fields={fields} fieldValues={fieldValues} onFieldChange={onFieldChange} formatPrice={formatPrice} onFileSelect={onFileSelect} />;
     }
   };
 
   return (
     <CollapsibleSection
-      number={section.showNumber ? sectionNumber : 0}
+      number={sectionNumber}
       title={section.title}
+      description={section.description}
       defaultOpen={section.defaultOpen}
+      collapsible={section.collapsible}
+      showNumber={section.showNumber}
     >
-      {section.description && (
-        <p className="section-description">{section.description}</p>
-      )}
       {renderFields()}
     </CollapsibleSection>
   );
@@ -100,12 +107,13 @@ interface LayoutProps {
   fieldValues: Record<string, any>;
   onFieldChange: (key: string, value: any) => void;
   formatPrice: (price: number) => string;
+  onFileSelect?: (file: File | null) => void;
 }
 
 /**
  * VERTICAL Layout - Fields stacked vertically
  */
-const VerticalLayout: React.FC<LayoutProps> = ({ fields, fieldValues, onFieldChange, formatPrice }) => {
+const VerticalLayout: React.FC<LayoutProps> = ({ fields, fieldValues, onFieldChange, formatPrice, onFileSelect }) => {
   return (
     <div className="section-layout-vertical">
       {fields.map((field) => (
@@ -115,6 +123,7 @@ const VerticalLayout: React.FC<LayoutProps> = ({ fields, fieldValues, onFieldCha
             value={fieldValues[field.key]}
             onChange={(value) => onFieldChange(field.key, value)}
             formatPrice={formatPrice}
+            onFileSelect={onFileSelect}
           />
         </div>
       ))}
@@ -125,7 +134,7 @@ const VerticalLayout: React.FC<LayoutProps> = ({ fields, fieldValues, onFieldCha
 /**
  * HORIZONTAL Layout - Fields side by side
  */
-const HorizontalLayout: React.FC<LayoutProps> = ({ fields, fieldValues, onFieldChange, formatPrice }) => {
+const HorizontalLayout: React.FC<LayoutProps> = ({ fields, fieldValues, onFieldChange, formatPrice, onFileSelect }) => {
   return (
     <div className="section-layout-horizontal">
       {fields.map((field) => (
@@ -135,6 +144,7 @@ const HorizontalLayout: React.FC<LayoutProps> = ({ fields, fieldValues, onFieldC
             value={fieldValues[field.key]}
             onChange={(value) => onFieldChange(field.key, value)}
             formatPrice={formatPrice}
+            onFileSelect={onFileSelect}
           />
         </div>
       ))}
@@ -190,21 +200,31 @@ const GridLayout: React.FC<LayoutProps & { columnsCount: number }> = ({
 
 /**
  * SPLIT Layout - Left: inputs, Right: presets (for size selection)
+ * Design based on Dekormunka reference - exact 1:1 match
  */
-const SplitLayout: React.FC<LayoutProps> = ({ fields, fieldValues, onFieldChange, formatPrice }) => {
+const SplitLayout: React.FC<LayoutProps & { presets?: PresetValue[] }> = ({
+  fields,
+  fieldValues,
+  onFieldChange,
+  formatPrice,
+  presets: sectionPresets,
+}) => {
   const numberFields = fields.filter((f) => f.type === 'NUMBER');
 
-  // Get combined presets from fields
-  const getCombinedPresets = () => {
+  // Get presets - prefer section-level presets, fallback to field presets
+  const getPresets = (): PresetValue[] => {
+    if (sectionPresets && sectionPresets.length > 0) {
+      return sectionPresets;
+    }
     for (const field of numberFields) {
       if (field.presetValues?.some((p) => typeof p.value === 'object')) {
-        return field.presetValues.filter((p) => typeof p.value === 'object');
+        return field.presetValues.filter((p) => typeof p.value === 'object') as PresetValue[];
       }
     }
     return [];
   };
 
-  const presets = getCombinedPresets();
+  const presets = getPresets();
 
   const handlePresetClick = (preset: { label: string; value: any }) => {
     if (typeof preset.value === 'object') {
@@ -217,14 +237,46 @@ const SplitLayout: React.FC<LayoutProps> = ({ fields, fieldValues, onFieldChange
     }
   };
 
+  // Determine icon based on field key/label - icon comes AFTER label text
+  const getFieldIcon = (field: TemplateField) => {
+    const key = field.key.toLowerCase();
+    const label = field.label.toLowerCase();
+
+    // Horizontal/width icon (↔)
+    if (key.includes('width') || key.includes('horizontal') || key.includes('vizszintes') || key.includes('szelesseg') ||
+        label.includes('széles') || label.includes('vízszintes') || label.includes('horizontal')) {
+      return (
+        <span className="dekormunka-label-icon">↔</span>
+      );
+    }
+
+    // Vertical/height icon (↕)
+    if (key.includes('height') || key.includes('vertical') || key.includes('fuggoleges') || key.includes('magassag') ||
+        label.includes('magas') || label.includes('függőleges') || label.includes('vertical')) {
+      return (
+        <span className="dekormunka-label-icon">↕</span>
+      );
+    }
+
+    // If field has iconUrl, use that
+    if (field.iconUrl) {
+      return <img src={field.iconUrl} alt="" className="dekormunka-label-icon-img" />;
+    }
+
+    return null;
+  };
+
   return (
     <div className="dekormunka-size-section">
       <div className="dekormunka-size-row">
-        {/* Left side - Size inputs */}
+        {/* Left side - Size inputs (stacked vertically) */}
         <div className="dekormunka-size-inputs-col">
           {numberFields.map((field) => (
             <div key={field.key} className="dekormunka-size-input-group">
-              <label className="dekormunka-label">{field.label}</label>
+              <label className="dekormunka-label">
+                <span>{field.label}:</span>
+                {getFieldIcon(field)}
+              </label>
               <div className="dekormunka-input-with-unit">
                 <input
                   type="number"
@@ -236,20 +288,20 @@ const SplitLayout: React.FC<LayoutProps> = ({ fields, fieldValues, onFieldChange
                   step={field.validation?.step || 1}
                   placeholder={field.placeholder}
                 />
-                <span className="dekormunka-unit">cm</span>
+                <span className="dekormunka-unit">{field.unit || 'cm'}</span>
               </div>
             </div>
           ))}
         </div>
 
-        {/* Right side - Combined size presets */}
+        {/* Right side - Combined size presets in 3-column grid */}
         {presets.length > 0 && (
           <div className="dekormunka-size-presets-col">
-            <label className="dekormunka-label">Gyakori méretek</label>
+            <div className="dekormunka-presets-title">Gyakori méretek</div>
             <div className="dekormunka-combined-presets">
               {presets.map((preset, idx) => {
                 const presetValue = preset.value as Record<string, number>;
-                const isSelected = Object.entries(presetValue).some(
+                const isSelected = Object.entries(presetValue).every(
                   ([key, val]) => fieldValues[key] === val
                 );
                 return (
@@ -307,9 +359,10 @@ interface FieldRendererProps {
   value: any;
   onChange: (value: any) => void;
   formatPrice: (price: number) => string;
+  onFileSelect?: (file: File | null) => void;
 }
 
-const FieldRenderer: React.FC<FieldRendererProps> = ({ field, value, onChange, formatPrice }) => {
+const FieldRenderer: React.FC<FieldRendererProps> = ({ field, value, onChange, formatPrice, onFileSelect }) => {
   switch (field.type) {
     case 'NUMBER':
       return (
@@ -326,11 +379,9 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({ field, value, onChange, f
               step={field.validation?.step || 1}
               placeholder={field.placeholder}
             />
-            {field.key.includes('width') || field.key.includes('height') ||
-             field.key.includes('szelesseg') || field.key.includes('magassag') ? (
-              <span className="dekormunka-unit">cm</span>
-            ) : null}
+            {field.unit && <span className="dekormunka-unit">{field.unit}</span>}
           </div>
+          {field.helpText && <span className="dekormunka-help-text">{field.helpText}</span>}
         </div>
       );
 
@@ -373,6 +424,22 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({ field, value, onChange, f
             label={field.label}
             required={field.required}
             columns={field.options.length <= 2 ? 2 : 2}
+          />
+        );
+      }
+      return null;
+
+    case 'GRAPHIC_SELECT':
+      if (field.options) {
+        return (
+          <GraphicSelector
+            options={field.options}
+            value={value || ''}
+            onChange={onChange}
+            onFileSelect={onFileSelect}
+            label={field.label}
+            helpText={field.helpText}
+            required={field.required}
           />
         );
       }

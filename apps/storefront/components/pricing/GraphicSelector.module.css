@@ -1,0 +1,249 @@
+/**
+ * GraphicSelector Styles
+ * Dekormunka design - 1:1 match
+ */
+
+.container {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Info box */
+.infoBox {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 16px;
+  background: #f8f8f8;
+  border-radius: 8px;
+}
+
+.infoIcon {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  color: #666666;
+  margin-top: 1px;
+}
+
+.infoText {
+  font-size: 13px;
+  color: #666666;
+  line-height: 1.5;
+}
+
+/* Options - chip buttons */
+.options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  background: white;
+  border: 1px solid #e5e5e5;
+  border-radius: 25px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 14px;
+  color: #333333;
+}
+
+.chip:hover {
+  border-color: #e91e8c;
+  background: #fdf2f8;
+}
+
+.chip.selected {
+  border-color: #e91e8c;
+  background: #fdf2f8;
+  color: #c4177a;
+}
+
+/* Radio indicator inside chip */
+.radioIndicator {
+  width: 18px;
+  height: 18px;
+  border: 2px solid #d1d1d1;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.chip:hover .radioIndicator {
+  border-color: #e91e8c;
+}
+
+.radioIndicator.radioSelected {
+  border-color: #e91e8c;
+  background: #e91e8c;
+}
+
+.radioDot {
+  width: 6px;
+  height: 6px;
+  background: white;
+  border-radius: 50%;
+}
+
+.chipLabel {
+  font-weight: 500;
+}
+
+/* Upload section */
+.uploadSection {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.uploadTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: #e91e8c;
+  margin: 0;
+}
+
+/* Dropzone */
+.dropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 40px 20px;
+  background: white;
+  border: 2px dashed #d1d1d1;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.dropzone:hover,
+.dropzone.dragging {
+  border-color: #e91e8c;
+  background: #fdf2f8;
+}
+
+.fileInput {
+  display: none;
+}
+
+.uploadIcon {
+  width: 48px;
+  height: 48px;
+  color: #999999;
+}
+
+.dropzone:hover .uploadIcon,
+.dropzone.dragging .uploadIcon {
+  color: #e91e8c;
+}
+
+.dropzoneText {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  text-align: center;
+}
+
+.dropzoneMain {
+  font-size: 14px;
+  font-weight: 500;
+  color: #333333;
+}
+
+.dropzoneSub {
+  font-size: 12px;
+  color: #999999;
+}
+
+/* File preview */
+.filePreview {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  background: #fdf2f8;
+  border: 2px solid #e91e8c;
+  border-radius: 8px;
+}
+
+.fileInfo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.fileIcon {
+  width: 32px;
+  height: 32px;
+  color: #e91e8c;
+}
+
+.fileDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.fileName {
+  font-size: 14px;
+  font-weight: 500;
+  color: #333333;
+}
+
+.fileSize {
+  font-size: 12px;
+  color: #666666;
+}
+
+.removeButton {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #999999;
+  transition: color 0.2s;
+}
+
+.removeButton:hover {
+  color: #ef4444;
+}
+
+.removeButton svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* Error */
+.error {
+  color: #ef4444;
+  font-size: 13px;
+  margin: 0;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .options {
+    flex-direction: column;
+  }
+
+  .chip {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}

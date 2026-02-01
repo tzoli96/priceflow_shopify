@@ -1,0 +1,320 @@
+{%- doc -%}
+  Renders the cart summary totals.
+
+  MODIFIED: Uses LocalStorage (custom-cart-items) instead of Shopify native cart.
+  Totals are calculated from LocalStorage data via JavaScript.
+
+  @param {string} [accelerated_checkout_buttons_layout] - { 'vertical' } Forced layout of the additional checkout buttons.
+{%- enddoc -%}
+
+<div class="cart__summary-totals" data-priceflow-cart-summary>
+  {%- comment -%} Discount section - hidden for LocalStorage cart {%- endcomment -%}
+  <div class="cart__original-total-container cart-primary-typography" style="display: none;">
+    {%- comment -%} Cart-level discounts not supported with LocalStorage cart {%- endcomment -%}
+  </div>
+
+  {%- comment -%} Cart note and discount code - optional features {%- endcomment -%}
+  {% if settings.show_cart_note or settings.show_add_discount_code %}
+    <div class="cart-actions">
+      {% if settings.show_cart_note %}
+        {% render 'cart-note' %}
+      {% endif %}
+      {% if settings.show_cart_note and settings.show_add_discount_code %}
+        <div class="cart-actions__divider"></div>
+      {% endif %}
+      {% if settings.show_add_discount_code %}
+        {% render 'cart-discount', section_id: section.id %}
+      {% endif %}
+    </div>
+  {% endif %}
+
+  <div class="cart__total-container{% if settings.show_installments %} cart__total-container--has-installments{% endif %}">
+    <span
+      class="cart__summary-item cart__total"
+      role="status"
+    >
+      <span class="cart__total-label cart-primary-typography">{{ 'content.cart_estimated_total' | t }}</span>
+      <span
+        class="cart__total-value cart-secondary-typography"
+        data-priceflow-cart-total
+        data-cart-subtotal
+      >
+        0 Ft
+      </span>
+    </span>
+    {% if settings.show_installments %}
+      <span class="cart__summary-item cart__installments">
+        {%- comment -%} Installments not supported with LocalStorage cart {%- endcomment -%}
+      </span>
+    {% endif %}
+    <div class="cart__summary-item tax-note cart-primary-typography">
+      {% render 'tax-info', has_discounts_enabled: settings.show_add_discount_code %}
+    </div>
+  </div>
+</div>
+
+<div class="cart__ctas">
+  <button
+    type="button"
+    id="checkout"
+    class="cart__checkout-button button"
+    data-priceflow-checkout-button
+  >
+    {{ 'content.checkout' | t }}
+  </button>
+
+  {%- comment -%} Accelerated checkout buttons not supported with LocalStorage cart {%- endcomment -%}
+</div>
+
+<script>
+(function() {
+  'use strict';
+
+  const STORAGE_KEY = 'custom-cart-items';
+
+  /**
+   * Get cart items from LocalStorage
+   */
+  function getCartItems() {
+    try {
+      const items = localStorage.getItem(STORAGE_KEY);
+      return items ? JSON.parse(items) : [];
+    } catch (error) {
+      console.error('[Cart Summary] Failed to load cart items:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Calculate cart total
+   */
+  function getCartTotal() {
+    const items = getCartItems();
+    return items.reduce((sum, item) => sum + (item.final_line_price || 0), 0);
+  }
+
+  /**
+   * Format price
+   */
+  function formatPrice(price) {
+    if (window.Shopify?.formatMoney) {
+      return window.Shopify.formatMoney(price * 100);
+    }
+    return new Intl.NumberFormat('hu-HU', {
+      style: 'currency',
+      currency: 'HUF',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2
+    }).format(price);
+  }
+
+  /**
+   * Update cart summary display - updates ALL summary elements on the page
+   */
+  function updateCartSummary() {
+    const items = getCartItems();
+    const total = getCartTotal();
+    const isEmpty = items.length === 0;
+    const formattedTotal = formatPrice(total);
+
+    // Update ALL total displays
+    document.querySelectorAll('[data-priceflow-cart-total]').forEach(el => {
+      el.textContent = formattedTotal;
+    });
+
+    // Update ALL checkout button states
+    document.querySelectorAll('[data-priceflow-checkout-button]').forEach(btn => {
+      btn.disabled = isEmpty;
+    });
+  }
+
+  /**
+   * Handle checkout button click
+   * Creates a draft order from LocalStorage cart items via PriceFlow API
+   */
+  async function handleCheckout() {
+    const items = getCartItems();
+
+    if (items.length === 0) {
+      alert('A kosár üres');
+      return;
+    }
+
+    // Disable all checkout buttons during API call
+    const checkoutButtons = document.querySelectorAll('[data-priceflow-checkout-button]');
+    checkoutButtons.forEach(btn => {
+      btn.disabled = true;
+      btn.textContent = 'Feldolgozás...';
+    });
+
+    try {
+      // Get shop domain
+      const shopDomain = window.Shopify?.shop || window.location.hostname;
+
+      // Call PriceFlow API to create draft order
+      const response = await fetch('https://app.teszt.uk/api/draft-orders/create-from-cart', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Shopify-Shop': shopDomain
+        },
+        body: JSON.stringify({
+          items: items,
+          note: 'Created from PriceFlow custom cart'
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Hiba történt a rendelés létrehozása során');
+      }
+
+      const draftOrder = await response.json();
+
+      console.log('[Cart Summary] Draft order created:', draftOrder.id);
+
+      // Clear the cart after successful draft order creation
+      localStorage.removeItem(STORAGE_KEY);
+      window.dispatchEvent(new CustomEvent('cartUpdated', { detail: { items: [] } }));
+
+      // Redirect to Shopify checkout (invoice URL)
+      if (draftOrder.invoiceUrl) {
+        window.location.href = draftOrder.invoiceUrl;
+      } else {
+        throw new Error('Nem sikerült a checkout URL lekérése');
+      }
+
+    } catch (error) {
+      console.error('[Cart Summary] Checkout failed:', error);
+      alert('Hiba történt: ' + error.message);
+
+      // Re-enable checkout buttons
+      checkoutButtons.forEach(btn => {
+        btn.disabled = false;
+        btn.textContent = '{{ 'content.checkout' | t }}';
+      });
+    }
+  }
+
+  /**
+   * Attach checkout handlers to ALL checkout buttons
+   */
+  function attachCheckoutHandlers() {
+    document.querySelectorAll('[data-priceflow-checkout-button]').forEach(btn => {
+      // Avoid duplicate listeners
+      if (!btn.hasAttribute('data-checkout-attached')) {
+        btn.setAttribute('data-checkout-attached', 'true');
+        btn.addEventListener('click', handleCheckout);
+      }
+    });
+  }
+
+  // Prevent duplicate initialization (script may be loaded multiple times)
+  if (!window._priceflowCartSummaryInitialized) {
+    window._priceflowCartSummaryInitialized = true;
+
+    // Initial update with small delay
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', function() {
+        setTimeout(function() {
+          updateCartSummary();
+          attachCheckoutHandlers();
+        }, 50);
+      });
+    } else {
+      setTimeout(function() {
+        updateCartSummary();
+        attachCheckoutHandlers();
+      }, 50);
+    }
+
+    // Listen for cart updates
+    window.addEventListener('cartUpdated', updateCartSummary);
+
+    // Listen for storage changes (cross-tab sync)
+    window.addEventListener('storage', function(event) {
+      if (event.key === STORAGE_KEY) {
+        updateCartSummary();
+      }
+    });
+  }
+  // Don't re-run on duplicate script load
+
+  // Export for external use
+  window.updatePriceflowCartSummary = updateCartSummary;
+})();
+</script>
+
+{% stylesheet %}
+  .cart-actions {
+    display: flex;
+    flex-direction: column;
+    gap: var(--gap-sm);
+    border-block: 1px solid var(--color-border);
+    padding-block: var(--padding-sm);
+    margin-block-start: var(--margin-3xs);
+  }
+
+  .cart-actions__divider {
+    border-block-start: 1px solid var(--color-border);
+  }
+
+  .cart__summary-totals:not(:has(.cart-actions)) {
+    margin-block-start: var(--margin-3xs);
+    border-block-start: 1px solid var(--color-border);
+    padding-block-start: var(--margin-xl);
+  }
+
+  .cart__installments {
+    color: var(--color-foreground);
+  }
+
+  .cart__summary-totals {
+    display: flex;
+    flex-direction: column;
+    gap: var(--gap-xl);
+    width: 100%;
+    border-block-start: none;
+  }
+
+  .cart__total-container {
+    display: flex;
+    flex-direction: column;
+    row-gap: var(--gap-2xs);
+  }
+
+  .cart__total-container.cart__total-container--has-installments {
+    row-gap: var(--gap-xs);
+  }
+
+  .cart__total {
+    font-weight: var(--font-weight-bold);
+  }
+
+  .cart__total-label {
+    font-size: var(--cart-font-size--sm);
+  }
+
+  .cart__total-value {
+    font-size: var(--cart-font-size--2xl);
+  }
+
+  .cart__ctas {
+    width: 100%;
+    display: grid;
+    gap: var(--checkout-button-gap);
+    grid-auto-flow: row;
+    grid-template-columns: 1fr;
+  }
+
+  .cart__ctas .cart__checkout-button {
+    width: 100%;
+    height: clamp(25px, var(--height-buy-buttons), 55px);
+    padding-inline: var(--padding-4xl);
+  }
+
+  .cart__checkout-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+{% endstylesheet %}

@@ -54,6 +54,12 @@ export class ShopHeaderInterceptor implements NestInterceptor {
     // Skip validation for public endpoints (OAuth, etc.)
     if (this.publicEndpoints.some((endpoint) => path.startsWith(endpoint))) {
       console.log(`[ShopHeaderInterceptor] Skipping validation for public endpoint: ${path}`);
+      // Still extract shop header if present (for pricing API, etc.)
+      const shopHeader = request.headers['x-shopify-shop'];
+      if (shopHeader) {
+        request.shopDomain = shopHeader.toLowerCase();
+        console.log(`[ShopHeaderInterceptor] Public endpoint with shop: ${request.shopDomain}`);
+      }
       return next.handle();
     }
 

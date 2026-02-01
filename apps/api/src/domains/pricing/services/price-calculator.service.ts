@@ -147,6 +147,7 @@ export interface TemplateSectionDTO {
   order: number;
   builtInType?: string;
   fields: TemplateFieldDTO[];
+  presets?: Array<{ label: string; value: number | string | Record<string, number> }>;
 }
 
 /**
@@ -334,6 +335,19 @@ export class PriceCalculatorService {
       context,
     );
 
+    // Auto-add option prices that are not explicitly used in formula
+    // This ensures PRODUCT_CARD, DELIVERY_TIME, GRAPHIC_SELECT, EXTRAS prices are always included
+    const optionPriceKeys = Object.keys(numericFieldValues).filter(key => key.endsWith('_price'));
+    for (const priceKey of optionPriceKeys) {
+      // Check if this price variable is NOT used in the formula
+      if (!template.pricingFormula.includes(priceKey)) {
+        const optionPrice = numericFieldValues[priceKey];
+        if (typeof optionPrice === 'number' && optionPrice > 0) {
+          unitPrice += optionPrice;
+        }
+      }
+    }
+
     // Apply express multiplier if selected
     const isExpress = options.isExpress && template.hasExpressOption;
     const expressMultiplier = template.expressMultiplier || 1;
@@ -359,7 +373,7 @@ export class PriceCalculatorService {
       calculatedPrice = calculatedPrice - discountAmount;
     }
 
-    // Generate breakdown
+    // Generate breakdown with field details
     const breakdown = this.generateBreakdown(
       template,
       context,
@@ -370,6 +384,8 @@ export class PriceCalculatorService {
       expressMultiplier,
       discountPercent,
       discountAmount,
+      allFields,
+      fieldValues,
     );
 
     // Calculate normal and express prices for display
@@ -571,6 +587,7 @@ export class PriceCalculatorService {
       order: section.order,
       builtInType: section.builtInType || undefined,
       fields: section.fields.map((f) => this.mapFieldToDTO(f)),
+      presets: section.presets || undefined,
     };
   }
 
@@ -654,6 +671,7 @@ export class PriceCalculatorService {
 
   /**
    * Breakdown generálása megjelenítéshez
+   * Részletes lista: mi mennyibe kerül
    */
   private generateBreakdown(
     template: TemplateModel,
@@ -665,49 +683,97 @@ export class PriceCalculatorService {
     expressMultiplier: number = 1,
     discountPercent: number = 0,
     discountAmount: number = 0,
+    allFields: TemplateFieldModel[] = [],
+    fieldValues: Record<string, any> = {},
   ): PriceBreakdownItem[] {
     const breakdown: PriceBreakdownItem[] = [];
 
-    // Original base price (for reference)
+    // 1. Termék alap ára
     breakdown.push({
       label: 'Termék alap ára',
       value: basePrice,
       type: 'base',
     });
 
-    // Calculated unit price from formula
-    breakdown.push({
-      label: 'Számított egységár',
-      value: unitPrice,
-      type: 'calculation',
-    });
+    // 2. Egyedi mező árak (opciók árai)
+    for (const field of allFields) {
+      const value = fieldValues[field.key];
+      if (value === undefined || value === null) continue;
 
-    // Express surcharge
-    if (isExpress && expressMultiplier > 1) {
-      const expressUnitPrice = unitPrice * expressMultiplier;
+      // Opció alapú mezők ára
+      if (
+        (field.type === 'PRODUCT_CARD' ||
+          field.type === 'DELIVERY_TIME' ||
+          field.type === 'GRAPHIC_SELECT' ||
+          field.type === 'SELECT' ||
+          field.type === 'RADIO') &&
+        field.options
+      ) {
+        const selectedOption = field.options.find((opt: any) => opt.value === value);
+        if (selectedOption?.price && selectedOption.price > 0) {
+          breakdown.push({
+            label: `${field.label}: ${selectedOption.label}`,
+            value: selectedOption.price,
+            type: 'addon',
+          });
+        }
+      }
+
+      // EXTRAS - többszörös választás
+      if (field.type === 'EXTRAS' && field.options && Array.isArray(value)) {
+        for (const selectedValue of value) {
+          const option = field.options.find((opt: any) => opt.value === selectedValue);
+          if (option?.price && option.price > 0) {
+            breakdown.push({
+              label: `${option.label}`,
+              value: option.price,
+              type: 'addon',
+            });
+          }
+        }
+      }
+    }
+
+    // 3. Számított egységár (formula eredménye - opcionális megjelenítés)
+    // Ha az egységár különbözik az alap ár + opciók összegétől, mutatjuk
+    const optionPricesSum = breakdown
+      .filter(item => item.type === 'addon')
+      .reduce((sum, item) => sum + item.value, 0);
+
+    if (Math.abs(unitPrice - (basePrice + optionPricesSum)) > 0.01) {
+      // Van formula-alapú számítás is (pl. négyzetméter alapján)
       breakdown.push({
-        label: `Expressz gyártás (×${expressMultiplier})`,
-        value: expressUnitPrice,
+        label: 'Számított egységár',
+        value: unitPrice,
+        type: 'calculation',
+      });
+    }
+
+    // 4. Expressz felár
+    if (isExpress && expressMultiplier > 1) {
+      const expressSurcharge = unitPrice * (expressMultiplier - 1);
+      breakdown.push({
+        label: `Expressz gyártás (+${Math.round((expressMultiplier - 1) * 100)}%)`,
+        value: expressSurcharge,
         type: 'addon',
       });
     }
 
-    // Subtotal before discount
+    // 5. Részösszeg 1 db-ra
     const effectiveUnitPrice = isExpress
       ? unitPrice * expressMultiplier
       : unitPrice;
-    const subtotal = effectiveUnitPrice * quantity;
 
-    // Quantity
+    // 6. Mennyiség (ha több mint 1)
     if (quantity > 1) {
       breakdown.push({
-        label: `Mennyiség (${quantity} db)`,
-        value: subtotal,
+        label: `Mennyiség: ${quantity} db × ${this.formatPrice(effectiveUnitPrice)}`,
+        value: effectiveUnitPrice * quantity,
         type: 'addon',
       });
     }
 
-    // Discount
+    // 7. Mennyiségi kedvezmény
     if (discountPercent > 0) {
       breakdown.push({
         label: `Mennyiségi kedvezmény (-${discountPercent}%)`,
@@ -716,7 +782,8 @@ export class PriceCalculatorService {
       });
     }
 
-    // Total
+    // 8. Végösszeg
+    const subtotal = effectiveUnitPrice * quantity;
     const finalTotal = subtotal - discountAmount;
     breakdown.push({
       label: 'Végösszeg',

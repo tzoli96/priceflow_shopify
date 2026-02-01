@@ -1,6 +1,7 @@
 /**
  * DeliveryTimeSelector Styles
- * Átfutási idő választó kártyák
+ * Dekormunka design - 1:1 match
+ * 2-column grid layout with radio cards
  */
 
 .container {
@@ -16,37 +17,45 @@
 }
 
 .required {
-  color: #d72c0d;
+  color: #e91e8c;
   margin-left: 4px;
 }
 
+/* 2-column grid */
 .options {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+@media (max-width: 640px) {
+  .options {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* Option card */
 .option {
   display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 16px 20px;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 20px;
   background: #ffffff;
-  border: 2px solid #e1e3e5;
-  border-radius: 10px;
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .option:hover {
-  border-color: #c9cccf;
-  background: #fafbfc;
+  border-color: #e91e8c;
+  background: #fdf2f8;
 }
 
 .option.selected {
-  border-color: #d72c0d;
-  background: #fff5f5;
+  border-color: #e91e8c;
+  border-width: 2px;
+  background: #fdf2f8;
 }
 
 /* Hidden radio input */
@@ -59,28 +68,30 @@
 /* Custom radio indicator */
 .radioIndicator {
   flex-shrink: 0;
-  width: 22px;
-  height: 22px;
-  border: 2px solid #c9cccf;
+  width: 20px;
+  height: 20px;
+  border: 2px solid #d1d1d1;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all 0.2s ease;
+  margin-top: 2px;
 }
 
 .option:hover .radioIndicator {
-  border-color: #8c9196;
+  border-color: #e91e8c;
 }
 
 .option.selected .radioIndicator {
-  border-color: #d72c0d;
+  border-color: #e91e8c;
+  background: #e91e8c;
 }
 
 .radioInner {
-  width: 12px;
-  height: 12px;
-  background: #d72c0d;
+  width: 8px;
+  height: 8px;
+  background: white;
   border-radius: 50%;
 }
 
@@ -98,53 +109,36 @@
   color: #1a1a1a;
 }
 
+.option.selected .title {
+  color: #c4177a;
+}
+
 .description {
   font-size: 13px;
-  color: #6b7177;
+  color: #666666;
   line-height: 1.4;
 }
 
-/* Price */
+/* Price - shown next to title or below */
 .price {
-  flex-shrink: 0;
-  text-align: right;
+  margin-top: 4px;
 }
 
 .priceValue {
-  font-size: 15px;
-  font-weight: 700;
-  color: #d72c0d;
+  font-size: 14px;
+  font-weight: 600;
+  color: #e91e8c;
 }
 
 .priceIncluded {
   font-size: 13px;
   font-weight: 500;
-  color: #008060;
+  color: #22c55e;
 }
 
 /* Error */
 .error {
-  color: #d72c0d;
+  color: #ef4444;
   font-size: 13px;
   margin-top: 8px;
-}
-
-/* Responsive */
-@media (max-width: 480px) {
-  .option {
-    padding: 14px 16px;
-    gap: 12px;
-  }
-
-  .title {
-    font-size: 14px;
-  }
-
-  .description {
-    font-size: 12px;
-  }
-
-  .priceValue {
-    font-size: 14px;
-  }
 }

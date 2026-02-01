@@ -1,7 +1,13 @@
 /**
  * ExtrasSelector Component
- * Extrák választó - checkbox kártyák képpel, címmel, leírással és árral
- * Több is választható egyszerre
+ * Dekormunka design - 1:1 match
+ *
+ * Features:
+ * - Horizontal card layout
+ * - Checkbox on left
+ * - Title + badge + description in middle
+ * - Price on right
+ * - Multiple selection support
  */
 
 'use client';
@@ -17,7 +23,7 @@ interface ExtrasSelectorProps {
   label?: string;
   required?: boolean;
   error?: string;
-  columns?: 2 | 3 | 4;
+  columns?: 2 | 3 | 4; // Not used in new design, kept for compatibility
 }
 
 export const ExtrasSelector: React.FC<ExtrasSelectorProps> = ({
@@ -27,7 +33,6 @@ export const ExtrasSelector: React.FC<ExtrasSelectorProps> = ({
   label,
   required = false,
   error,
-  columns = 2,
 }) => {
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('hu-HU', {
@@ -53,12 +58,13 @@ export const ExtrasSelector: React.FC<ExtrasSelectorProps> = ({
         </label>
       )}
 
-      <div className={styles.grid} style={{ '--columns': columns } as React.CSSProperties}>
+      <div className={styles.list}>
         {options.map((option) => {
           const isSelected = value.includes(option.value);
           const hasImage = !!option.imageUrl;
           const hasDescription = !!option.description;
           const hasPrice = option.price !== undefined;
+          const hasBadge = !!option.badge;
 
           return (
             <label
@@ -88,9 +94,14 @@ export const ExtrasSelector: React.FC<ExtrasSelectorProps> = ({
                 </div>
               )}
 
-              {/* Content */}
+              {/* Content - title, badge, description */}
               <div className={styles.content}>
-                <span className={styles.title}>{option.label}</span>
+                <div className={styles.titleRow}>
+                  <span className={styles.title}>{option.label}</span>
+                  {hasBadge && (
+                    <span className={styles.badge}>{option.badge}</span>
+                  )}
+                </div>
                 {hasDescription && (
                   <span className={styles.description}>{option.description}</span>
                 )}
@@ -100,7 +111,7 @@ export const ExtrasSelector: React.FC<ExtrasSelectorProps> = ({
               {hasPrice && (
                 <div className={styles.price}>
                   {option.price! > 0 ? (
-                    <span className={styles.priceValue}>+{formatPrice(option.price!)}</span>
+                    <span className={styles.priceValue}>{formatPrice(option.price!)}-tól</span>
                   ) : (
                     <span className={styles.priceFree}>Ingyenes</span>
                   )}

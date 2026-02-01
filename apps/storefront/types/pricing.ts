@@ -16,7 +16,8 @@ export type FieldType =
   | 'FILE'
   | 'PRODUCT_CARD' // Gazdag termék/anyag választó kártyákkal
   | 'DELIVERY_TIME' // Átfutási idő választó (név, leírás, ár)
-  | 'EXTRAS'; // Extrák választó (kép, cím, leírás, ár) - több választható
+  | 'EXTRAS' // Extrák választó (kép, cím, leírás, ár) - több választható
+  | 'GRAPHIC_SELECT'; // Grafika választó (feltöltöm / tervezést kérek)
 
 /**
  * Field option for SELECT/RADIO/PRODUCT_CARD fields
@@ -31,6 +32,7 @@ export interface FieldOption {
   description?: string; // Hosszabb leírás
   htmlContent?: string; // HTML formázott tartalom (PRODUCT_CARD)
   features?: string[]; // Felsorolás pontok (bullet points)
+  enableUpload?: boolean; // GRAPHIC_SELECT: Ha true, fájlfeltöltő jelenik meg
 }
 
 /**
@@ -155,9 +157,8 @@ export interface ProductTemplateInfo {
     id: string;
     name: string;
     description?: string;
-    fields: TemplateField[];
-    // Szekciók (új rendszer)
-    sections?: TemplateSection[];
+    // Szekciók (mezők a szekciókon belül vannak)
+    sections: TemplateSection[];
     // Express option
     hasExpressOption: boolean;
     expressMultiplier?: number;

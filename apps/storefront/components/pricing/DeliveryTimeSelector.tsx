@@ -1,6 +1,11 @@
 /**
  * DeliveryTimeSelector Component
- * Átfutási idő választó - egyszerű radio kártyák névvel, leírással és árral
+ * Dekormunka design - 1:1 match
+ *
+ * Features:
+ * - 2-column grid layout
+ * - Radio button indicator
+ * - Title + description + optional price
  */
 
 'use client';
@@ -46,7 +51,7 @@ export const DeliveryTimeSelector: React.FC<DeliveryTimeSelectorProps> = ({
         {options.map((option) => {
           const isSelected = value === option.value;
           const hasDescription = !!option.description;
-          const hasPrice = option.price !== undefined;
+          const hasPrice = option.price !== undefined && option.price > 0;
 
           return (
             <label
@@ -73,18 +78,12 @@ export const DeliveryTimeSelector: React.FC<DeliveryTimeSelectorProps> = ({
                 {hasDescription && (
                   <span className={styles.description}>{option.description}</span>
                 )}
-              </div>
-
-              {/* Price */}
-              {hasPrice && (
-                <div className={styles.price}>
-                  {option.price! > 0 ? (
+                {hasPrice && (
+                  <div className={styles.price}>
                     <span className={styles.priceValue}>+{formatPrice(option.price!)}</span>
-                  ) : option.price === 0 ? (
-                    <span className={styles.priceIncluded}>Ingyenes</span>
-                  ) : null}
-                </div>
-              )}
+                  </div>
+                )}
+              </div>
             </label>
           );
         })}
