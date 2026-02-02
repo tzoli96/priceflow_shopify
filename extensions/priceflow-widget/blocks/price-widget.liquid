@@ -5,7 +5,7 @@
   The widget communicates with the parent page via postMessage.
 {% endcomment %}
 
-{% assign widget_url = block.settings.widget_url | default: "https://app.teszt.uk/storefront" %}
+{% assign widget_url = block.settings.widget_url | default: "https://d1kl8ffas839mv.cloudfront.net/storefront" %}
 {% assign variant_id = product.selected_or_first_available_variant.id %}
 
 <div
@@ -73,7 +73,7 @@
       "type": "text",
       "id": "widget_url",
       "label": "Widget URL",
-      "default": "https://app.teszt.uk/storefront",
+      "default": "http://priceflow-alb-240094690.eu-central-1.elb.amazonaws.com/storefront",
       "info": "A PriceFlow storefront app URL-je"
     },
     {

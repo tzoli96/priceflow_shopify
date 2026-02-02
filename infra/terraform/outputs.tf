@@ -90,3 +90,22 @@ output "vpc_id" {
   description = "A VPC azonosítója"
   value       = aws_vpc.main.id
 }
+
+# -----------------------------------------------------------------------------
+# CloudFront kimenetek
+# -----------------------------------------------------------------------------
+
+output "cloudfront_domain_name" {
+  description = "A CloudFront distribution domain neve (*.cloudfront.net)"
+  value       = aws_cloudfront_distribution.main.domain_name
+}
+
+output "cloudfront_url" {
+  description = "Az alkalmazás URL-je (HTTPS, CloudFront-on keresztül)"
+  value       = "https://${aws_cloudfront_distribution.main.domain_name}"
+}
+
+output "cloudfront_distribution_id" {
+  description = "A CloudFront distribution azonosítója (cache invalidáláshoz)"
+  value       = aws_cloudfront_distribution.main.id
+}

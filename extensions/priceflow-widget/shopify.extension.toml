@@ -16,7 +16,7 @@ handle = "priceflow-widget"
     type = "text"
     id = "widget_url"
     label = "Widget URL"
-    default = "https://app.teszt.uk"
+    default = "https://d1kl8ffas839mv.cloudfront.net"
 
     [[extensions.blocks.settings]]
     type = "range"
