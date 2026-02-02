@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { APP_INTERCEPTOR } from '@nestjs/core';
+import { ScheduleModule } from '@nestjs/schedule';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PrismaModule } from './domains/common/database/prisma.module';
@@ -15,6 +16,7 @@ import { ShopHeaderInterceptor } from './domains/common/interceptors/shop-header
 
 @Module({
   imports: [
+    ScheduleModule.forRoot(),
     PrismaModule,     // Global Prisma module
     ShopModule,       // Shop domain
     AuthModule,       // Auth domain (Shopify OAuth)

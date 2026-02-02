@@ -8,6 +8,7 @@
 import { Module } from '@nestjs/common';
 import { DraftOrderController } from './controllers/draft-order.controller';
 import { DraftOrderService } from './services/draft-order.service';
+import { DraftOrderCronService } from './services/draft-order-cron.service';
 import { ShopModule } from '../shop/shop.module';
 import { AuthModule } from '../auth/auth.module';
 
@@ -26,7 +27,7 @@ import { AuthModule } from '../auth/auth.module';
 @Module({
   imports: [ShopModule, AuthModule],
   controllers: [DraftOrderController],
-  providers: [DraftOrderService],
+  providers: [DraftOrderService, DraftOrderCronService],
   exports: [DraftOrderService],
 })
 export class DraftOrderModule {}

@@ -31,22 +31,28 @@ export class S3Service {
   private readonly publicUrl: string | null;
 
   constructor() {
-    this.bucket = process.env.S3_BUCKET_NAME || 'priceflow-uploads';
-    this.endpointUrl = process.env.AWS_ENDPOINT_URL || 'http://localstack:4566';
+    this.bucket = process.env.S3_BUCKET_NAME || process.env.AWS_S3_BUCKET || 'priceflow-uploads';
+    this.endpointUrl = process.env.AWS_ENDPOINT_URL || '';
     // Optional: separate public URL for browser access (e.g., https://app.teszt.uk/s3)
     this.publicUrl = process.env.S3_PUBLIC_URL || null;
 
-    this.s3Client = new S3Client({
-      endpoint: this.endpointUrl,
+    const s3Config: ConstructorParameters<typeof S3Client>[0] = {
       region: process.env.AWS_REGION || 'eu-central-1',
-      credentials: {
+    };
+
+    // Only set endpoint and explicit credentials for LocalStack/development
+    if (this.endpointUrl) {
+      s3Config.endpoint = this.endpointUrl;
+      s3Config.forcePathStyle = true;
+      s3Config.credentials = {
         accessKeyId: process.env.AWS_ACCESS_KEY_ID || 'test',
         secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || 'test',
-      },
-      forcePathStyle: true, // Required for LocalStack
-    });
+      };
+    }
 
-    this.logger.log(`S3Service initialized with bucket: ${this.bucket}, publicUrl: ${this.publicUrl || 'not set'}`);
+    this.s3Client = new S3Client(s3Config);
+
+    this.logger.log(`S3Service initialized with bucket: ${this.bucket}, endpoint: ${this.endpointUrl || 'default (AWS)'}, publicUrl: ${this.publicUrl || 'not set'}`);
   }
 
   /**

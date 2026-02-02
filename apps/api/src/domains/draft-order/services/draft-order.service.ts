@@ -273,7 +273,10 @@ export class DraftOrderService {
         draft_order: {
           line_items: createDto.items.map((item) => this.buildLineItemFromCart(item)),
           note: createDto.note || 'Created by PriceFlow',
-          tags: createDto.tags?.join(', ') || 'priceflow,custom-pricing',
+          tags: [
+            'priceflow-cart',
+            ...(createDto.tags || ['priceflow', 'custom-pricing']),
+          ].join(', '),
           email: createDto.email,
         },
       };
