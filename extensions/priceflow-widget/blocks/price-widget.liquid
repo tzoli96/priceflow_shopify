@@ -22,7 +22,8 @@
     width="100%"
     height="{{ block.settings.widget_height | default: 500 }}"
     frameborder="0"
-    style="border: none; border-radius: 8px;"
+    scrolling="no"
+    style="border: none; border-radius: 8px; transition: height 0.15s ease-out;"
     title="PriceFlow Konfigurátor"
     loading="lazy"
   ></iframe>
@@ -31,17 +32,22 @@
 <script>
   // Listen for messages from PriceFlow widget
   window.addEventListener('message', function(event) {
-    // Verify origin in production
     var data = event.data;
 
+    // Dynamic iframe resize — keeps iframe height in sync with its content
+    if (data.type === 'PRICEFLOW_RESIZE' && data.height) {
+      var iframe = document.getElementById('priceflow-iframe-{{ block.id }}');
+      if (iframe) {
+        iframe.style.height = data.height + 'px';
+      }
+      return;
+    }
+
     if (data.type === 'PRICEFLOW_ADD_TO_CART') {
-      // Handle add to cart
       console.log('[PriceFlow] Add to cart:', data.payload);
-      // You can integrate with your theme's cart here
     }
 
     if (data.type === 'PRICEFLOW_CHECKOUT') {
-      // Redirect to checkout
       if (data.payload && data.payload.invoiceUrl) {
         window.location.href = data.payload.invoiceUrl;
       }

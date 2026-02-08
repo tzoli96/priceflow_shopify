@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import "@/styles/cart.css";
 import { Toast } from "@/components/cart/Toast";
+import { IframeResizeObserver } from "@/components/IframeResizeObserver";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -31,6 +32,7 @@ export default function RootLayout({
       >
         {children}
         <Toast />
+        <IframeResizeObserver />
       </body>
     </html>
   );
