@@ -1,0 +1,177 @@
+# =============================================================================
+# GitHub Actions CI/CD Pipeline - AWS ECS Deploy
+# =============================================================================
+#
+# Ez a workflow automatikusan deploy-ol minden push-nál a main branch-re.
+#
+# Lépések:
+#   1. Checkout kód
+#   2. AWS OIDC autentikáció (nincs szükség long-lived credentials-re)
+#   3. Docker image-ek build-elése és push-olása ECR-be
+#   4. ECS service-ek frissítése (force new deployment)
+#
+# Szükséges GitHub Secrets:
+#   - Nincs! Az OIDC autentikáció miatt nem kellenek AWS kulcsok.
+#
+# Szükséges Terraform outputs (már be vannak állítva):
+#   - GitHub Actions IAM Role ARN
+#   - ECR repository URL-ek
+#   - ECS cluster és service nevek
+# =============================================================================
+
+name: Deploy to AWS ECS
+
+on:
+  push:
+    branches:
+      - main
+  # Manuális futtatás is lehetséges
+  workflow_dispatch:
+
+# Csak egy deploy futhat egyszerre
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: eu-central-1
+  PROJECT_NAME: priceflow
+
+# OIDC tokenhez szükséges jogosultság
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    name: Build and Deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      # -----------------------------------------------------------------
+      # 1. Checkout
+      # -----------------------------------------------------------------
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # -----------------------------------------------------------------
+      # 2. AWS OIDC Autentikáció
+      # -----------------------------------------------------------------
+      # Ez a lépés OIDC tokent kér a GitHub-tól, és azt használja
+      # az AWS-be való bejelentkezéshez. Nincs szükség access key-re!
+      # -----------------------------------------------------------------
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/${{ env.PROJECT_NAME }}-github-actions
+          aws-region: ${{ env.AWS_REGION }}
+
+      # -----------------------------------------------------------------
+      # 3. ECR Bejelentkezés
+      # -----------------------------------------------------------------
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      # -----------------------------------------------------------------
+      # 4. Docker image-ek build és push
+      # -----------------------------------------------------------------
+      - name: Build and push API image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build \
+            -f infra/docker/api/Dockerfile \
+            -t $ECR_REGISTRY/$PROJECT_NAME-api:latest \
+            -t $ECR_REGISTRY/$PROJECT_NAME-api:$IMAGE_TAG \
+            .
+          docker push $ECR_REGISTRY/$PROJECT_NAME-api:latest
+          docker push $ECR_REGISTRY/$PROJECT_NAME-api:$IMAGE_TAG
+
+      - name: Build and push Admin image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build \
+            -f infra/docker/admin/Dockerfile \
+            -t $ECR_REGISTRY/$PROJECT_NAME-admin:latest \
+            -t $ECR_REGISTRY/$PROJECT_NAME-admin:$IMAGE_TAG \
+            --target production \
+            apps/admin
+          docker push $ECR_REGISTRY/$PROJECT_NAME-admin:latest
+          docker push $ECR_REGISTRY/$PROJECT_NAME-admin:$IMAGE_TAG
+
+      - name: Build and push Storefront image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build \
+            -f infra/docker/storefront/Dockerfile \
+            -t $ECR_REGISTRY/$PROJECT_NAME-storefront:latest \
+            -t $ECR_REGISTRY/$PROJECT_NAME-storefront:$IMAGE_TAG \
+            .
+          docker push $ECR_REGISTRY/$PROJECT_NAME-storefront:latest
+          docker push $ECR_REGISTRY/$PROJECT_NAME-storefront:$IMAGE_TAG
+
+      # -----------------------------------------------------------------
+      # 5. ECS Service-ek frissítése
+      # -----------------------------------------------------------------
+      # A --force-new-deployment újra pull-olja az image-eket és
+      # újraindítja a task-okat.
+      # -----------------------------------------------------------------
+      - name: Update ECS API service
+        run: |
+          aws ecs update-service \
+            --cluster $PROJECT_NAME-cluster \
+            --service $PROJECT_NAME-api \
+            --force-new-deployment \
+            --region $AWS_REGION
+
+      - name: Update ECS Admin service
+        run: |
+          aws ecs update-service \
+            --cluster $PROJECT_NAME-cluster \
+            --service $PROJECT_NAME-admin \
+            --force-new-deployment \
+            --region $AWS_REGION
+
+      - name: Update ECS Storefront service
+        run: |
+          aws ecs update-service \
+            --cluster $PROJECT_NAME-cluster \
+            --service $PROJECT_NAME-storefront \
+            --force-new-deployment \
+            --region $AWS_REGION
+
+      # -----------------------------------------------------------------
+      # 6. Várakozás a deploy befejezésére (opcionális)
+      # -----------------------------------------------------------------
+      - name: Wait for API service stability
+        run: |
+          aws ecs wait services-stable \
+            --cluster $PROJECT_NAME-cluster \
+            --services $PROJECT_NAME-api \
+            --region $AWS_REGION
+        timeout-minutes: 10
+
+      - name: Wait for Admin service stability
+        run: |
+          aws ecs wait services-stable \
+            --cluster $PROJECT_NAME-cluster \
+            --services $PROJECT_NAME-admin \
+            --region $AWS_REGION
+        timeout-minutes: 10
+
+      - name: Wait for Storefront service stability
+        run: |
+          aws ecs wait services-stable \
+            --cluster $PROJECT_NAME-cluster \
+            --services $PROJECT_NAME-storefront \
+            --region $AWS_REGION
+        timeout-minutes: 10
+
+      - name: Deploy complete
+        run: echo "Deploy completed successfully!"
