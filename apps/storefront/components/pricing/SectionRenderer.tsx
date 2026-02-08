@@ -22,6 +22,7 @@ import { ProductCardSelector } from './ProductCardSelector';
 import { DeliveryTimeSelector } from './DeliveryTimeSelector';
 import { ExtrasSelector } from './ExtrasSelector';
 import { GraphicSelector } from './GraphicSelector';
+import { FileUpload } from './FileUpload';
 
 interface SectionRendererProps {
   section: TemplateSection;
@@ -444,6 +445,19 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({ field, value, onChange, f
         );
       }
       return null;
+
+    case 'FILE':
+      return (
+        <FileUpload
+          label={field.label}
+          onChange={(file) => {
+            onChange(file);
+            if (onFileSelect) onFileSelect(file);
+          }}
+          value={value || null}
+          helpText={field.helpText}
+        />
+      );
 
     case 'SELECT':
     case 'RADIO':
