@@ -61,7 +61,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
 
   // Render fields based on layout type
   const renderFields = () => {
-    const fields = section.fields || [];
+    const fields = [...(section.fields || [])].sort((a, b) => a.order - b.order);
 
     switch (section.layoutType) {
       case 'VERTICAL':
