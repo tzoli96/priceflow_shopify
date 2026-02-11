@@ -14,6 +14,7 @@ export const FIELD_TYPE_OPTIONS: { label: string; value: FieldType }[] = [
   { label: 'Átfutási idő', value: FieldType.DELIVERY_TIME },
   { label: 'Extrák', value: FieldType.EXTRAS },
   { label: 'Grafika választó', value: FieldType.GRAPHIC_SELECT },
+  { label: 'Mennyiség választó', value: FieldType.QUANTITY_SELECTOR },
 ];
 
 /**
@@ -116,6 +117,23 @@ export const FIELD_TYPE_CATEGORIES: FieldTypeCategory[] = [
           React.createElement('line', { x1: 20, y1: 24, x2: 30, y2: 24, stroke: 'currentColor', strokeWidth: 2, opacity: 0.5 })
         ),
       },
+      {
+        value: FieldType.QUANTITY_SELECTOR,
+        label: 'Mennyiség választó',
+        description: '- / + gombok és preset értékek',
+        icon: React.createElement('svg', { width: 40, height: 40, viewBox: '0 0 40 40', fill: 'none' },
+          // Main quantity selector (- [5] +)
+          React.createElement('rect', { x: 6, y: 12, width: 28, height: 10, rx: 5, stroke: 'currentColor', strokeWidth: 2, fill: 'none' }),
+          React.createElement('line', { x1: 9, y1: 17, x2: 13, y2: 17, stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round' }),
+          React.createElement('line', { x1: 29, y1: 15, x2: 29, y2: 19, stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round' }),
+          React.createElement('line', { x1: 27, y1: 17, x2: 31, y2: 17, stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round' }),
+          React.createElement('text', { x: 20, y: 19, textAnchor: 'middle', fill: 'currentColor', fontSize: 8, fontWeight: 'bold' }, '5'),
+          // Preset buttons
+          React.createElement('rect', { x: 6, y: 26, width: 7, height: 6, rx: 2, fill: 'currentColor', opacity: 0.3 }),
+          React.createElement('rect', { x: 15, y: 26, width: 10, height: 6, rx: 2, fill: 'currentColor', opacity: 0.5 }),
+          React.createElement('rect', { x: 27, y: 26, width: 7, height: 6, rx: 2, fill: 'currentColor', opacity: 0.3 })
+        ),
+      },
     ],
   },
   {
@@ -197,16 +215,13 @@ export const FORMULA_OPERATORS = [
 /**
  * System variables available in formulas
  * These are automatically provided by the pricing engine
+ *
+ * Note: 'quantity' has been removed - use QUANTITY_SELECTOR field type instead
  */
 export const FORMULA_SYSTEM_VARIABLES = [
   {
     name: 'base_price',
     description: 'Termék alap ára (Shopify-ból)',
     example: 'base_price + 500',
-  },
-  {
-    name: 'quantity',
-    description: 'Rendelt mennyiség',
-    example: 'base_price * quantity',
   },
 ] as const;

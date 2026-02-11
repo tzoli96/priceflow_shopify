@@ -22,6 +22,7 @@ import { ProductCardSelector } from './ProductCardSelector';
 import { DeliveryTimeSelector } from './DeliveryTimeSelector';
 import { ExtrasSelector } from './ExtrasSelector';
 import { GraphicSelector } from './GraphicSelector';
+import { QuantitySelector } from './QuantitySelector';
 
 interface SectionRendererProps {
   section: TemplateSection;
@@ -444,6 +445,23 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({ field, value, onChange, f
         );
       }
       return null;
+
+    case 'QUANTITY_SELECTOR':
+      return (
+        <div>
+          <label className="dekormunka-label">{field.label}</label>
+          <QuantitySelector
+            value={typeof value === 'number' ? value : 1}
+            onChange={onChange}
+            options={field.options}
+            min={field.validation?.min || 1}
+            max={field.validation?.max}
+            step={field.validation?.step || 1}
+            required={field.required}
+          />
+          {field.helpText && <span className="dekormunka-help-text">{field.helpText}</span>}
+        </div>
+      );
 
     case 'SELECT':
     case 'RADIO':

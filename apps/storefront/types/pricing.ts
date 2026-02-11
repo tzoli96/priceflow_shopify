@@ -17,7 +17,8 @@ export type FieldType =
   | 'PRODUCT_CARD' // Gazdag termék/anyag választó kártyákkal
   | 'DELIVERY_TIME' // Átfutási idő választó (név, leírás, ár)
   | 'EXTRAS' // Extrák választó (kép, cím, leírás, ár) - több választható
-  | 'GRAPHIC_SELECT'; // Grafika választó (feltöltöm / tervezést kérek)
+  | 'GRAPHIC_SELECT' // Grafika választó (feltöltöm / tervezést kérek)
+  | 'QUANTITY_SELECTOR'; // Mennyiség választó (- / + gombok és presetek)
 
 /**
  * Field option for SELECT/RADIO/PRODUCT_CARD fields

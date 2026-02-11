@@ -567,6 +567,29 @@ export function DekormunkaConfigurator({
         {/* Right side - Summary sidebar */}
         <div className="dekormunka-sidebar">
           <div className="dekormunka-summary">
+            {/* Mobile compact view */}
+            <div className="dekormunka-summary-mobile">
+              <span className="dekormunka-summary-mobile-quantity">{quantity} db</span>
+              <div className="dekormunka-summary-mobile-price">
+                {calculating ? (
+                  <div className="dekormunka-calculating">
+                    <div className="dekormunka-spinner-small" />
+                  </div>
+                ) : (
+                  <>
+                    {priceResult?.priceBeforeDiscount && priceResult.priceBeforeDiscount !== priceResult.calculatedPrice && (
+                      <span className="dekormunka-original-price">
+                        {formatPrice(priceResult.priceBeforeDiscount)}
+                      </span>
+                    )}
+                    <span className="dekormunka-final-price">
+                      {priceResult ? formatPrice(priceResult.calculatedPrice) : '-'}
+                    </span>
+                  </>
+                )}
+              </div>
+            </div>
+
             <h3 className="dekormunka-summary-title">Összegzés</h3>
 
             <div className="dekormunka-summary-list">

@@ -24,6 +24,7 @@ export enum FieldType {
   DELIVERY_TIME = 'DELIVERY_TIME', // Átfutási idő választó (név, leírás, ár)
   EXTRAS = 'EXTRAS', // Extrák választó (kép, cím, leírás, ár) - több választható
   GRAPHIC_SELECT = 'GRAPHIC_SELECT', // Grafika választó (feltöltöm / tervezést kérek)
+  QUANTITY_SELECTOR = 'QUANTITY_SELECTOR', // Mennyiség választó (- / input / + és presetek)
 }
 
 /**
