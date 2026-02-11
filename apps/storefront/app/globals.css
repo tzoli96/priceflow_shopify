@@ -24,3 +24,11 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Hide scrollbar inside iframe — parent scrollbar drives scrolling */
+html.in-iframe {
+  scrollbar-width: none; /* Firefox */
+}
+html.in-iframe::-webkit-scrollbar {
+  display: none; /* Chrome / Safari / Edge */
+}

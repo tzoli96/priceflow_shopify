@@ -23,6 +23,7 @@ import { DeliveryTimeSelector } from './DeliveryTimeSelector';
 import { ExtrasSelector } from './ExtrasSelector';
 import { GraphicSelector } from './GraphicSelector';
 import { QuantitySelector } from './QuantitySelector';
+import { FileUpload } from './FileUpload';
 
 interface SectionRendererProps {
   section: TemplateSection;
@@ -62,7 +63,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
 
   // Render fields based on layout type
   const renderFields = () => {
-    const fields = section.fields || [];
+    const fields = [...(section.fields || [])].sort((a, b) => a.order - b.order);
 
     switch (section.layoutType) {
       case 'VERTICAL':
@@ -445,6 +446,19 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({ field, value, onChange, f
         );
       }
       return null;
+
+    case 'FILE':
+      return (
+        <FileUpload
+          label={field.label}
+          onChange={(file) => {
+            onChange(file);
+            if (onFileSelect) onFileSelect(file);
+          }}
+          value={value || null}
+          helpText={field.helpText}
+        />
+      );
 
     case 'QUANTITY_SELECTOR':
       return (

@@ -2,7 +2,9 @@
   PriceFlow Widget - Theme App Extension Block
 
   Embeds the storefront configurator for template-based pricing.
-  The widget communicates with the parent page via postMessage.
+  Uses cooperative scroll bridging: the parent scrollbar drives the
+  iframe content via postMessage so the widget scrolls naturally
+  alongside the rest of the product page.
 {% endcomment %}
 
 {% assign widget_url = block.settings.widget_url | default: "https://d1kl8ffas839mv.cloudfront.net/storefront" %}
@@ -16,37 +18,100 @@
   data-product-handle="{{ product.handle }}"
   data-shop="{{ shop.permanent_domain }}"
 >
-  <iframe
-    id="priceflow-iframe-{{ block.id }}"
-    src="{{ widget_url }}?productId={{ product.id }}&shop={{ shop.permanent_domain }}&handle={{ product.handle }}&variant={{ variant_id }}"
-    width="100%"
-    height="{{ block.settings.widget_height | default: 500 }}"
-    frameborder="0"
-    style="border: none; border-radius: 8px;"
-    title="PriceFlow Konfigurátor"
-    loading="lazy"
-  ></iframe>
+  {%- comment -%}
+    The spacer grows to match the iframe's full content height.
+    The iframe sticks to the viewport top while the user scrolls
+    through the spacer, and the parent sends scroll offsets to it.
+  {%- endcomment -%}
+  <div id="priceflow-spacer-{{ block.id }}" class="priceflow-scroll-spacer">
+    <iframe
+      id="priceflow-iframe-{{ block.id }}"
+      src="{{ widget_url }}?productId={{ product.id }}&shop={{ shop.permanent_domain }}&handle={{ product.handle }}&variant={{ variant_id }}"
+      width="100%"
+      frameborder="0"
+      style="border: none; border-radius: 8px;"
+      title="PriceFlow Konfigurátor"
+      loading="lazy"
+    ></iframe>
+  </div>
 </div>
 
 <script>
-  // Listen for messages from PriceFlow widget
-  window.addEventListener('message', function(event) {
-    // Verify origin in production
-    var data = event.data;
+  (function() {
+    var blockId = '{{ block.id }}';
+    var spacer  = document.getElementById('priceflow-spacer-' + blockId);
+    var iframe  = document.getElementById('priceflow-iframe-' + blockId);
+    if (!spacer || !iframe) return;
 
-    if (data.type === 'PRICEFLOW_ADD_TO_CART') {
-      // Handle add to cart
-      console.log('[PriceFlow] Add to cart:', data.payload);
-      // You can integrate with your theme's cart here
+    var iframeScrollHeight = 0;
+    var ticking = false;
+
+    // ---- Sync: calculate iframe scrollTop from parent scroll position ----
+    function syncScroll() {
+      if (!iframeScrollHeight) return;
+
+      var spacerRect = spacer.getBoundingClientRect();
+      var iframeH    = iframe.offsetHeight;
+      var maxScroll  = Math.max(0, iframeScrollHeight - iframeH);
+
+      // spacerRect.top == 0 → iframe scroll = 0
+      // spacerRect.top == -maxScroll → iframe scroll = maxScroll
+      var scrollTop = Math.max(0, Math.min(-spacerRect.top, maxScroll));
+
+      iframe.contentWindow.postMessage({
+        type: 'PRICEFLOW_SCROLL',
+        scrollTop: scrollTop
+      }, '*');
     }
 
-    if (data.type === 'PRICEFLOW_CHECKOUT') {
-      // Redirect to checkout
-      if (data.payload && data.payload.invoiceUrl) {
-        window.location.href = data.payload.invoiceUrl;
+    // ---- Messages from iframe ----
+    window.addEventListener('message', function(event) {
+      // Only handle messages from our iframe
+      if (iframe.contentWindow && event.source !== iframe.contentWindow) return;
+
+      var data = event.data;
+      if (!data || !data.type) return;
+
+      // Iframe reports its content height → size the spacer
+      if (data.type === 'PRICEFLOW_RESIZE' && data.scrollHeight) {
+        iframeScrollHeight = data.scrollHeight;
+        var iframeH     = iframe.offsetHeight;
+        var extraScroll  = Math.max(0, iframeScrollHeight - iframeH);
+        spacer.style.height = (iframeH + extraScroll) + 'px';
+        // Re-sync immediately in case the page is already scrolled
+        syncScroll();
+        return;
       }
-    }
-  });
+
+      // Iframe forwards wheel events → scroll parent page
+      if (data.type === 'PRICEFLOW_WHEEL') {
+        window.scrollBy({ top: data.deltaY, behavior: 'instant' });
+        syncScroll();
+        return;
+      }
+
+      if (data.type === 'PRICEFLOW_ADD_TO_CART') {
+        console.log('[PriceFlow] Add to cart:', data.payload);
+      }
+
+      if (data.type === 'PRICEFLOW_CHECKOUT') {
+        if (data.payload && data.payload.invoiceUrl) {
+          window.location.href = data.payload.invoiceUrl;
+        }
+      }
+    });
+
+    // ---- Parent scroll → drive iframe scroll position ----
+    window.addEventListener('scroll', function() {
+      if (!ticking) {
+        requestAnimationFrame(function() {
+          syncScroll();
+          ticking = false;
+        });
+        ticking = true;
+      }
+    }, { passive: true });
+  })();
 </script>
 
 <style>
@@ -56,11 +121,19 @@
     margin-bottom: 20px;
   }
 
+  .priceflow-scroll-spacer {
+    position: relative;
+    width: 100%;
+  }
+
   .priceflow-widget iframe {
     display: block;
     width: 100%;
+    height: 100dvh;
     min-height: 300px;
     border: none;
+    position: sticky;
+    top: 0;
   }
 </style>
 
@@ -75,16 +148,6 @@
       "label": "Widget URL",
       "default": "http://priceflow-alb-240094690.eu-central-1.elb.amazonaws.com/storefront",
       "info": "A PriceFlow storefront app URL-je"
-    },
-    {
-      "type": "range",
-      "id": "widget_height",
-      "min": 300,
-      "max": 800,
-      "step": 50,
-      "unit": "px",
-      "label": "Widget magasság",
-      "default": 500
     }
   ]
 }

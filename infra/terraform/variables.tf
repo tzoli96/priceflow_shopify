@@ -184,3 +184,13 @@ variable "storefront_desired_count" {
   type        = number
   default     = 1
 }
+
+# -----------------------------------------------------------------------------
+# GitHub Actions CI/CD beállítások
+# -----------------------------------------------------------------------------
+
+variable "github_repo" {
+  description = "GitHub repository neve (owner/repo formátumban)"
+  type        = string
+  default     = "tzoli96/priceflow_shopify"
+}
