@@ -142,7 +142,7 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({
       newErrors.label = 'Megjelenített név kötelező';
     }
 
-    const typesWithOptions = ['SELECT', 'RADIO', 'PRODUCT_CARD', 'DELIVERY_TIME', 'EXTRAS', 'GRAPHIC_SELECT'];
+    const typesWithOptions = ['SELECT', 'RADIO', 'PRODUCT_CARD', 'DELIVERY_TIME', 'EXTRAS', 'GRAPHIC_SELECT', 'QUANTITY_SELECTOR'];
 
     if (typesWithOptions.includes(formData.type) && options.length === 0) {
       newErrors.options = 'Legalább egy opció megadása kötelező';
@@ -278,7 +278,7 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({
       displayStyle: formData.displayStyle !== 'default' ? formData.displayStyle : undefined,
       validation: Object.keys(validation).length > 0 ? validation : undefined,
       options:
-        (formData.type === 'SELECT' || formData.type === 'RADIO' || formData.type === 'PRODUCT_CARD' || formData.type === 'DELIVERY_TIME' || formData.type === 'EXTRAS' || formData.type === 'GRAPHIC_SELECT') && cleanedOptions.length > 0
+        (formData.type === 'SELECT' || formData.type === 'RADIO' || formData.type === 'PRODUCT_CARD' || formData.type === 'DELIVERY_TIME' || formData.type === 'EXTRAS' || formData.type === 'GRAPHIC_SELECT' || formData.type === 'QUANTITY_SELECTOR') && cleanedOptions.length > 0
           ? cleanedOptions
           : undefined,
       presetValues:
@@ -1083,6 +1083,68 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({
               <Banner tone="info">
                 A GRAPHIC_SELECT típusnál tipikusan két opció van: egy feltöltéses (ingyenes vagy olcsóbb) és egy tervezést kérő (felárért).
                 Az "enableUpload" beállítás határozza meg, melyik opciónál jelenjen meg a fájlfeltöltő.
+              </Banner>
+            </>
+          )}
+
+          {/* QUANTITY_SELECTOR opciók - Mennyiség preset értékek */}
+          {formData.type === 'QUANTITY_SELECTOR' && (
+            <>
+              <Text variant="headingMd" as="h3">Mennyiség preset értékek</Text>
+              <Text variant="bodyMd" as="p" tone="subdued">
+                Gyors választás gombok (pl. 1 db, 5 db, 10 db). A label az érték amit a felhasználó lát, a value a tényleges szám.
+              </Text>
+
+              {errors.options && (
+                <Banner tone="critical">{errors.options}</Banner>
+              )}
+
+              <BlockStack gap="300">
+                {options.map((option, index) => (
+                  <Box
+                    key={index}
+                    padding="300"
+                    background="bg-surface-secondary"
+                    borderRadius="200"
+                  >
+                    <InlineStack gap="300" align="end">
+                      <div style={{ flex: 1 }}>
+                        <TextField
+                          label="Címke (pl. '10 db')"
+                          value={option.label}
+                          onChange={(value) => updateOption(index, { label: value })}
+                          placeholder="10 db"
+                          autoComplete="off"
+                        />
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <TextField
+                          label="Érték (szám)"
+                          type="number"
+                          value={option.value}
+                          onChange={(value) => updateOption(index, { value })}
+                          placeholder="10"
+                          autoComplete="off"
+                        />
+                      </div>
+                      <Button
+                        icon={DeleteIcon}
+                        tone="critical"
+                        onClick={() => removeOption(index)}
+                        accessibilityLabel="Opció törlése"
+                      />
+                    </InlineStack>
+                  </Box>
+                ))}
+
+                <Button icon={PlusIcon} onClick={addOption}>
+                  Preset hozzáadása
+                </Button>
+              </BlockStack>
+
+              <Banner tone="info">
+                A QUANTITY_SELECTOR preset értékei gyors választást biztosítanak a vásárlónak.
+                Például: 1 db, 5 db, 10 db, 25 db.
               </Banner>
             </>
           )}

@@ -1209,9 +1209,46 @@
   background: var(--dm-primary-dark);
 }
 
-/* ===== Mobile Summary View ===== */
+/* ===== Mobile Summary - Sticky Mini View ===== */
+.dekormunka-summary-mobile-sticky {
+  display: none; /* Hidden on desktop */
+}
+
 .dekormunka-summary-mobile {
-  display: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  background: white;
+  border-bottom: 1px solid var(--dm-border);
+}
+
+.dekormunka-summary-mobile-quantity {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--dm-text);
+}
+
+.dekormunka-summary-mobile-price {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dekormunka-summary-mobile .dekormunka-final-price {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--dm-primary);
+}
+
+.dekormunka-summary-mobile .dekormunka-original-price {
+  font-size: 14px;
+  text-decoration: line-through;
+  color: var(--dm-text-muted);
+}
+
+.dekormunka-summary-mobile .dekormunka-calculating {
+  font-size: 14px;
 }
 
 /* ===== Responsive ===== */
@@ -1222,73 +1259,35 @@
 
   .dekormunka-sidebar {
     width: 100%;
+  }
+
+  /* Sticky mini summary at top (20vh) */
+  .dekormunka-summary-mobile-sticky {
+    display: block;
     position: sticky;
     top: 0;
     z-index: 100;
-  }
-
-  .dekormunka-summary {
-    position: relative;
-    top: 0;
     height: 20vh;
-    display: flex;
-    flex-direction: column;
-    padding: 0;
-  }
-
-  /* Show mobile compact view */
-  .dekormunka-summary-mobile {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 12px 20px;
     background: white;
-    border-bottom: 1px solid var(--dm-border);
-    flex: 1;
+    border: 1px solid var(--dm-border);
+    border-radius: var(--dm-radius-lg);
+    overflow: hidden;
+    box-shadow: var(--dm-shadow);
+    margin-bottom: 16px;
   }
 
-  .dekormunka-summary-mobile-quantity {
-    font-size: 16px;
-    font-weight: 600;
-    color: var(--dm-text);
-  }
-
-  .dekormunka-summary-mobile-price {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .dekormunka-summary-mobile .dekormunka-final-price {
-    font-size: 20px;
-    font-weight: 700;
-    color: var(--dm-primary);
-  }
-
-  .dekormunka-summary-mobile .dekormunka-original-price {
-    font-size: 14px;
-    text-decoration: line-through;
-    color: var(--dm-text-muted);
-  }
-
-  .dekormunka-summary-mobile .dekormunka-calculating {
-    font-size: 14px;
-  }
-
-  /* Hide detailed summary items on mobile */
-  .dekormunka-summary-title,
-  .dekormunka-summary-list,
-  .dekormunka-summary-discount,
-  .dekormunka-summary-total {
-    display: none;
-  }
-
-  /* Mobile add to cart button */
-  .dekormunka-add-to-cart {
+  .dekormunka-summary-mobile-sticky .dekormunka-add-to-cart {
     width: calc(100% - 40px);
     margin: 0 20px 12px;
     padding: 14px 20px;
     font-size: 15px;
+  }
+
+  /* Full summary - normal position, shows all details */
+  .dekormunka-summary {
+    position: relative;
+    top: 0;
+    /* Full details visible here */
   }
 
   .dekormunka-express-section {

@@ -566,8 +566,8 @@ export function DekormunkaConfigurator({
 
         {/* Right side - Summary sidebar */}
         <div className="dekormunka-sidebar">
-          <div className="dekormunka-summary">
-            {/* Mobile compact view */}
+          {/* Mobile sticky mini summary */}
+          <div className="dekormunka-summary-mobile-sticky">
             <div className="dekormunka-summary-mobile">
               <span className="dekormunka-summary-mobile-quantity">{quantity} db</span>
               <div className="dekormunka-summary-mobile-price">
@@ -589,7 +589,22 @@ export function DekormunkaConfigurator({
                 )}
               </div>
             </div>
+            {/* Mobile add to cart button in sticky */}
+            <button
+              type="button"
+              className="dekormunka-add-to-cart"
+              onClick={handleAddToCart}
+              disabled={!isFormValid() || calculating || !priceResult}
+            >
+              <svg className="dekormunka-cart-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+              Kosárba teszem
+            </button>
+          </div>
 
+          {/* Full summary (desktop + mobile scroll position) */}
+          <div className="dekormunka-summary">
             <h3 className="dekormunka-summary-title">Összegzés</h3>
 
             <div className="dekormunka-summary-list">
