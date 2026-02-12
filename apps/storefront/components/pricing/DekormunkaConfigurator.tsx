@@ -163,6 +163,9 @@ export function DekormunkaConfigurator({
       } else if (field.type === 'EXTRAS') {
         // EXTRAS is multi-select - always send to calculate option prices
         numericValues[field.key] = Array.isArray(value) ? value : [];
+      } else if (field.type === 'QUANTITY_SELECTOR') {
+        // Quantity selector - send as number
+        numericValues[field.key] = typeof value === 'number' ? value : Number(value) || 1;
       } else if (
         field.type === 'SELECT' ||
         field.type === 'RADIO' ||

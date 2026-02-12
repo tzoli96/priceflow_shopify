@@ -1,4 +1,4 @@
-import { Injectable, Inject, NotFoundException } from '@nestjs/common';
+import { Injectable, Inject, NotFoundException, BadRequestException } from '@nestjs/common';
 import { ScopeType } from '@prisma/client';
 import { FormulaEvaluatorService } from './formula-evaluator.service';
 import type { ITemplateRepository } from '../../template/repositories/template.repository.interface';
@@ -552,7 +552,7 @@ export class PriceCalculatorService {
         (Array.isArray(value) && value.length === 0);
 
       if (isEmpty) {
-        throw new NotFoundException(
+        throw new BadRequestException(
           `Required field missing: ${field.label} (${field.key})`,
         );
       }
@@ -628,6 +628,7 @@ export class PriceCalculatorService {
 
       switch (field.type) {
         case 'NUMBER':
+        case 'QUANTITY_SELECTOR':
           // Direct numeric value
           result[field.key] = typeof value === 'number' ? value : Number(value) || 0;
           break;
