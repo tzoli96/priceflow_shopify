@@ -224,25 +224,32 @@ export class FormulaEvaluatorService {
    *
    * Speciális változók, amiket a rendszer automatikusan biztosít:
    * - base_price: Termék alapára
-   * - quantity: Rendszer mennyiség (QUANTITY_SELECTOR field felülírhatja)
-   *
-   * Note: Ha van QUANTITY_SELECTOR field useInFormula=true-val, az felülírja
-   * a rendszer quantity értékét.
+   * - quantity: Csak akkor elérhető, ha van QUANTITY_SELECTOR mező useInFormula=true-val
    *
    * @param fieldValues - Felhasználó által megadott mező értékek
    * @param basePrice - Termék alapára
-   * @param quantity - Mennyiség (default érték, field felülírhatja)
+   * @param quantity - Mennyiség (csak ha van QUANTITY_SELECTOR mező)
    * @returns Teljes context változókkal
    */
   prepareContext(
     fieldValues: Record<string, number>,
     basePrice: number,
-    quantity: number,
+    quantity?: number,
   ): Record<string, number> {
-    return {
+    const context: Record<string, number> = {
       base_price: basePrice,
-      quantity,           // Default quantity (can be overridden by field)
       ...fieldValues,     // Field values (including QUANTITY_SELECTOR if present)
     };
+
+    // Only add quantity if provided (when QUANTITY_SELECTOR field exists)
+    if (quantity !== undefined) {
+      // If fieldValues doesn't already have 'quantity', add it
+      // This allows QUANTITY_SELECTOR field to override system quantity
+      if (!fieldValues.hasOwnProperty('quantity')) {
+        context.quantity = quantity;
+      }
+    }
+
+    return context;
   }
 }

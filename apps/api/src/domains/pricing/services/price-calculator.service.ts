@@ -321,11 +321,17 @@ export class PriceCalculatorService {
     // Convert field values to numeric context (including _price for option fields)
     const numericFieldValues = this.convertFieldValuesToNumeric(allFields, fieldValues);
 
+    // Check if there's a QUANTITY_SELECTOR field with useInFormula=true
+    const hasQuantityField = allFields.some(
+      field => field.type === 'QUANTITY_SELECTOR' && field.useInFormula
+    );
+
     // Prepare context with all variables
+    // Only include quantity if there's a QUANTITY_SELECTOR field
     const context = this.formulaEvaluator.prepareContext(
       numericFieldValues,
       basePrice,
-      quantity,
+      hasQuantityField ? quantity : undefined,
     );
 
     // Evaluate formula - base_price is available as a variable in the formula

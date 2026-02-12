@@ -215,13 +215,16 @@ export const FORMULA_OPERATORS = [
 /**
  * System variables available in formulas
  * These are automatically provided by the pricing engine
- *
- * Note: 'quantity' has been removed - use QUANTITY_SELECTOR field type instead
  */
 export const FORMULA_SYSTEM_VARIABLES = [
   {
     name: 'base_price',
     description: 'Termék alap ára (Shopify-ból)',
     example: 'base_price + 500',
+  },
+  {
+    name: 'quantity',
+    description: 'Rendelési mennyiség - csak ha van QUANTITY_SELECTOR mező!',
+    example: 'base_price * quantity',
   },
 ] as const;
