@@ -1274,6 +1274,16 @@
     overflow: hidden;
     box-shadow: var(--dm-shadow);
     margin-bottom: 16px;
+    opacity: 1;
+    transform: translateY(0);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+  }
+
+  /* Hide mobile sticky when full summary is visible */
+  .dekormunka-summary-mobile-sticky.hidden {
+    opacity: 0;
+    transform: translateY(-100%);
+    pointer-events: none;
   }
 
   .dekormunka-summary-mobile-sticky .dekormunka-add-to-cart {

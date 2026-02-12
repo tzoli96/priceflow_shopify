@@ -13,7 +13,7 @@
 
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { api } from '@/lib/api';
 import type {
   ProductTemplateInfo,
@@ -81,6 +81,10 @@ export function DekormunkaConfigurator({
 
   // Quantity validation
   const [quantityError, setQuantityError] = useState<string | null>(null);
+
+  // Mobile sticky visibility - hide when full summary is visible
+  const [hideMobileSticky, setHideMobileSticky] = useState(false);
+  const fullSummaryRef = useRef<HTMLDivElement>(null);
 
   // Load template on mount
   useEffect(() => {
@@ -215,6 +219,33 @@ export function DekormunkaConfigurator({
       setQuantityError(null);
     }
   }, [quantity, templateInfo?.template?.quantityLimits]);
+
+  // Intersection Observer for mobile sticky behavior
+  useEffect(() => {
+    if (!fullSummaryRef.current) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          // Hide mobile sticky when full summary is visible
+          setHideMobileSticky(entry.isIntersecting);
+        });
+      },
+      {
+        // Trigger when summary starts entering viewport
+        threshold: 0.1,
+        // Use viewport as root (important for iframe scrolling)
+        root: null,
+        rootMargin: '0px',
+      }
+    );
+
+    observer.observe(fullSummaryRef.current);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
 
   // Handle field change
   const handleFieldChange = (key: string, value: any) => {
@@ -567,7 +598,7 @@ export function DekormunkaConfigurator({
         {/* Right side - Summary sidebar */}
         <div className="dekormunka-sidebar">
           {/* Mobile sticky mini summary */}
-          <div className="dekormunka-summary-mobile-sticky">
+          <div className={`dekormunka-summary-mobile-sticky ${hideMobileSticky ? 'hidden' : ''}`}>
             <div className="dekormunka-summary-mobile">
               <span className="dekormunka-summary-mobile-quantity">{quantity} db</span>
               <div className="dekormunka-summary-mobile-price">
@@ -604,7 +635,7 @@ export function DekormunkaConfigurator({
           </div>
 
           {/* Full summary (desktop + mobile scroll position) */}
-          <div className="dekormunka-summary">
+          <div ref={fullSummaryRef} className="dekormunka-summary">
             <h3 className="dekormunka-summary-title">Összegzés</h3>
 
             <div className="dekormunka-summary-list">
