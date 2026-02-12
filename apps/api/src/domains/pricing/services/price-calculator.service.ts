@@ -357,8 +357,9 @@ export class PriceCalculatorService {
       unitPrice = unitPrice * expressMultiplier;
     }
 
-    // Calculate base total before discount
-    let calculatedPrice = unitPrice * quantity;
+    // Formula result is already the total price (quantity can be used in formula)
+    // No automatic multiplication by quantity
+    let calculatedPrice = unitPrice;
     const priceBeforeDiscount = calculatedPrice;
 
     // Apply discount tier if applicable
@@ -389,14 +390,15 @@ export class PriceCalculatorService {
     );
 
     // Calculate normal and express prices for display
-    const normalPrice = normalUnitPrice * quantity;
+    // Formula already includes quantity, so no multiplication needed
+    const normalPrice = normalUnitPrice;
     const expressPrice = template.hasExpressOption
-      ? normalUnitPrice * expressMultiplier * quantity
+      ? normalUnitPrice * expressMultiplier
       : undefined;
 
     return {
       calculatedPrice,
-      originalPrice: basePrice * quantity,
+      originalPrice: basePrice,
       breakdown,
       formattedPrice: this.formatPrice(calculatedPrice),
       currency: 'HUF', // TODO: Get from shop settings
@@ -759,19 +761,12 @@ export class PriceCalculatorService {
       });
     }
 
-    // 5. Részösszeg 1 db-ra
+    // 5. Részösszeg (formula már tartalmazza a mennyiséget)
     const effectiveUnitPrice = isExpress
       ? unitPrice * expressMultiplier
       : unitPrice;
 
-    // 6. Mennyiség (ha több mint 1)
-    if (quantity > 1) {
-      breakdown.push({
-        label: `Mennyiség: ${quantity} db × ${this.formatPrice(effectiveUnitPrice)}`,
-        value: effectiveUnitPrice * quantity,
-        type: 'addon',
-      });
-    }
+    // 6. Mennyiség - már a formulában szerepel, nem kell külön megjeleníteni
 
     // 7. Mennyiségi kedvezmény
     if (discountPercent > 0) {
@@ -783,7 +778,7 @@ export class PriceCalculatorService {
     }
 
     // 8. Végösszeg
-    const subtotal = effectiveUnitPrice * quantity;
+    const subtotal = effectiveUnitPrice;
     const finalTotal = subtotal - discountAmount;
     breakdown.push({
       label: 'Végösszeg',
