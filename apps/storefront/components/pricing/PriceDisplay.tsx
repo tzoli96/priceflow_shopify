@@ -49,18 +49,6 @@ export function PriceDisplay({
         </span>
       </div>
 
-      {/* Discount badge */}
-      {result?.discountPercent && (
-        <div className="priceflow-discount-badge">
-          -{result.discountPercent}% kedvezmény
-          {result.priceBeforeDiscount && (
-            <span className="priceflow-original-price">
-              {formatPrice(result.priceBeforeDiscount)}
-            </span>
-          )}
-        </div>
-      )}
-
       {/* Breakdown toggle */}
       {result && result.breakdown.length > 0 && (
         <button

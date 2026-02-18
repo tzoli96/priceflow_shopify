@@ -49,7 +49,6 @@ export class FormulaValidatorService {
    */
   private readonly systemVariables = [
     'base_price', // Product base price from Shopify
-    'quantity', // Order quantity
   ];
 
   /**

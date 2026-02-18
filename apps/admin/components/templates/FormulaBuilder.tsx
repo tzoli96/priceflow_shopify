@@ -37,9 +37,11 @@ export const FormulaBuilder: React.FC<FormulaBuilderProps> = ({
 
   // Filter fields that can be used in formula
   // NUMBER: direct numeric value
+  // QUANTITY_SELECTOR: direct numeric value (mennyiség)
   // PRODUCT_CARD, DELIVERY_TIME, EXTRAS: option price (with _price suffix)
   // SELECT, RADIO: option price if any option has a price
   const formulaFields = fields.filter(field => field.type === 'NUMBER');
+  const quantitySelectorFields = fields.filter(field => field.type === 'QUANTITY_SELECTOR');
 
   // Fields with price options (these will have _price suffix in formula)
   const priceOptionFields = fields.filter(field => {
@@ -123,8 +125,37 @@ export const FormulaBuilder: React.FC<FormulaBuilderProps> = ({
               ))}
             </InlineStack>
             <Text as="p" variant="bodySm" tone="subdued">
-              <strong>base_price</strong>: Termék alap ára (Shopify-ból) • <strong>quantity</strong>: Rendelt mennyiség
+              <strong>base_price</strong>: Termék alap ára (Shopify-ból)
             </Text>
+          </BlockStack>
+
+          <Divider />
+
+          {/* QUANTITY_SELECTOR Fields */}
+          <BlockStack gap="200">
+            <Text as="p" variant="bodySm" fontWeight="semibold">
+              Mennyiség mező:
+            </Text>
+            {quantitySelectorFields.length > 0 ? (
+              <InlineStack gap="200" wrap>
+                {quantitySelectorFields.map((field) => (
+                  <Button
+                    key={field.key}
+                    size="slim"
+                    onClick={() => handleFieldClick(field.key)}
+                    tone="success"
+                  >
+                    {field.label && field.label !== field.key
+                      ? `${field.key} (${field.label})`
+                      : field.key}
+                  </Button>
+                ))}
+              </InlineStack>
+            ) : (
+              <Text as="p" variant="bodySm" tone="caution">
+                Nincs QUANTITY_SELECTOR mező — a sablon mentéséhez kötelező!
+              </Text>
+            )}
           </BlockStack>
 
           <Divider />

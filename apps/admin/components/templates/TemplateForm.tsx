@@ -105,10 +105,9 @@ export function TemplateForm({
       newErrors.fields = 'Legalább egy szekció hozzáadása kötelező';
     }
 
-    const numberFields = allFields.filter((f) => f.type === 'NUMBER');
-    if (numberFields.length === 0 && formData.pricingFormula.trim()) {
-      newErrors.fields =
-        'Legalább egy NUMBER típusú mező szükséges a képlet használatához';
+    const quantitySelectorFields = allFields.filter((f) => f.type === 'QUANTITY_SELECTOR');
+    if (quantitySelectorFields.length === 0) {
+      newErrors.fields = 'Legalább egy Mennyiség választó (QUANTITY_SELECTOR) mező kötelező a sablonban';
     }
 
     setErrors(newErrors);

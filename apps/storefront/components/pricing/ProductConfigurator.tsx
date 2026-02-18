@@ -13,13 +13,10 @@ import type {
   ProductTemplateInfo,
   PriceCalculationResult,
   TemplateField,
-  DiscountTier,
 } from '@/types/pricing';
 import { ConfiguratorField } from './ConfiguratorField';
 import { PriceDisplay } from './PriceDisplay';
 import { ExpressSelector } from './ExpressSelector';
-import { DiscountTierDisplay } from './DiscountTierDisplay';
-import { QuantityInput } from './QuantityInput';
 import { ConfigSummary } from './ConfigSummary';
 
 interface ProductConfiguratorProps {
@@ -68,7 +65,6 @@ export function ProductConfigurator({
 
   // Form state
   const [fieldValues, setFieldValues] = useState<Record<string, any>>({});
-  const [quantity, setQuantity] = useState(1);
   const [isExpress, setIsExpress] = useState(false);
   const [notes, setNotes] = useState('');
 
@@ -77,9 +73,6 @@ export function ProductConfigurator({
     null
   );
   const [calculating, setCalculating] = useState(false);
-
-  // Quantity validation
-  const [quantityError, setQuantityError] = useState<string | null>(null);
 
   // Load template on mount
   useEffect(() => {
@@ -156,7 +149,6 @@ export function ProductConfigurator({
         templateId: templateInfo.template.id,
         productId,
         fieldValues: numericValues,
-        quantity,
         basePrice,
         isExpress,
       });
@@ -166,7 +158,7 @@ export function ProductConfigurator({
     } finally {
       setCalculating(false);
     }
-  }, [templateInfo, fieldValues, quantity, basePrice, isExpress, productId]);
+  }, [templateInfo, fieldValues, basePrice, isExpress, productId]);
 
   // Debounced price calculation
   useEffect(() => {
@@ -179,29 +171,6 @@ export function ProductConfigurator({
     return () => clearTimeout(timer);
   }, [calculatePrice, templateInfo?.hasTemplate]);
 
-  // Validate quantity
-  useEffect(() => {
-    const limits = templateInfo?.template?.quantityLimits;
-    if (!limits) {
-      setQuantityError(null);
-      return;
-    }
-
-    if (limits.minQuantity && quantity < limits.minQuantity) {
-      setQuantityError(
-        limits.minQuantityMessage ||
-          `Minimum rendelési mennyiség: ${limits.minQuantity} db`
-      );
-    } else if (limits.maxQuantity && quantity > limits.maxQuantity) {
-      setQuantityError(
-        limits.maxQuantityMessage ||
-          `Maximum rendelési mennyiség: ${limits.maxQuantity} db`
-      );
-    } else {
-      setQuantityError(null);
-    }
-  }, [quantity, templateInfo?.template?.quantityLimits]);
-
   // Handle field change
   const handleFieldChange = (key: string, value: any) => {
     setFieldValues((prev) => ({ ...prev, [key]: value }));
@@ -209,11 +178,15 @@ export function ProductConfigurator({
 
   // Handle add to cart
   const handleAddToCart = () => {
-    if (!priceResult || !templateInfo?.template || quantityError) return;
+    if (!priceResult || !templateInfo?.template) return;
 
     // Build properties object with field labels and values
     const properties: Record<string, any> = {};
     const allFields = (templateInfo.template.sections || []).flatMap((s) => s.fields || []);
+
+    // Cart quantity = QUANTITY_SELECTOR mező értéke
+    const quantityField = allFields.find((f) => f.type === 'QUANTITY_SELECTOR');
+    const cartQuantity = quantityField ? (Number(fieldValues[quantityField.key]) || 1) : 1;
     allFields.forEach((field) => {
       const value = fieldValues[field.key];
       if (value !== undefined && value !== '') {
@@ -237,11 +210,6 @@ export function ProductConfigurator({
         templateInfo.template.normalLabel || 'Normál gyártás';
     }
 
-    // Add discount info
-    if (priceResult.discountPercent) {
-      properties['Kedvezmény'] = `-${priceResult.discountPercent}%`;
-    }
-
     // Add notes if provided
     if (notes && templateInfo.template.hasNotesField) {
       properties[templateInfo.template.notesFieldLabel || 'Megjegyzés'] = notes;
@@ -251,8 +219,8 @@ export function ProductConfigurator({
       variantId,
       productTitle,
       productImage,
-      quantity,
-      finalPrice: priceResult.calculatedPrice / quantity,
+      quantity: cartQuantity,
+      finalPrice: priceResult.calculatedPrice / cartQuantity,
       finalLinePrice: priceResult.calculatedPrice,
       properties,
       isExpress,
@@ -274,7 +242,7 @@ export function ProductConfigurator({
       }
     }
 
-    return !quantityError;
+    return true;
   };
 
   // Loading state
@@ -331,27 +299,6 @@ export function ProductConfigurator({
                 />
               ))}
           </div>
-
-          {/* Quantity input */}
-          <div className="mt-6">
-            <QuantityInput
-              value={quantity}
-              onChange={setQuantity}
-              min={template.quantityLimits?.minQuantity || 1}
-              max={template.quantityLimits?.maxQuantity}
-              error={quantityError}
-            />
-          </div>
-
-          {/* Discount tiers display */}
-          {template.discountTiers && template.discountTiers.length > 0 && (
-            <div className="mt-6">
-              <DiscountTierDisplay
-                tiers={template.discountTiers}
-                currentQuantity={quantity}
-              />
-            </div>
-          )}
 
           {/* Express option selector */}
           {template.hasExpressOption && (
@@ -411,13 +358,11 @@ export function ProductConfigurator({
             productImage={productImage}
             fields={allFields}
             fieldValues={fieldValues}
-            quantity={quantity}
             isExpress={isExpress}
             expressLabel={template.expressLabel}
             normalLabel={template.normalLabel}
             priceResult={priceResult}
             calculating={calculating}
-            discountPercent={priceResult?.discountPercent}
             hasNotesField={template.hasNotesField}
             notesFieldLabel={template.notesFieldLabel}
             notes={notes}

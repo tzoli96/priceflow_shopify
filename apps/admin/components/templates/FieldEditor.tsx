@@ -127,6 +127,13 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({
     }
   }, [formData.label, formData.key, field]);
 
+  // QUANTITY_SELECTOR mezőnél useInFormula mindig true
+  useEffect(() => {
+    if (formData.type === 'QUANTITY_SELECTOR' && !formData.useInFormula) {
+      setFormData((prev) => ({ ...prev, useInFormula: true }));
+    }
+  }, [formData.type]);
+
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
 
@@ -399,7 +406,12 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({
                 onChange={(checked) =>
                   setFormData((prev) => ({ ...prev, useInFormula: checked }))
                 }
-                helpText="Ha nincs bejelölve, a mező értéke nem befolyásolja az árat"
+                helpText={
+                  formData.type === 'QUANTITY_SELECTOR'
+                    ? 'Mennyiség választó mező mindig szerepel az árkalkulációs képletben'
+                    : 'Ha nincs bejelölve, a mező értéke nem befolyásolja az árat'
+                }
+                disabled={formData.type === 'QUANTITY_SELECTOR'}
               />
             </InlineStack>
           </FormLayout>

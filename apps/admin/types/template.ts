@@ -159,15 +159,6 @@ export interface TemplateField {
   iconUrl?: string; // Ikon URL a label mellett
 }
 
-/**
- * Sávos kedvezmény tier
- */
-export interface DiscountTier {
-  minQty: number;
-  maxQty: number | null; // null = végtelen
-  discount: number; // Százalék
-}
-
 export interface Template {
   id: string;
   shopId: string;
@@ -186,15 +177,6 @@ export interface Template {
 
   // All fields are in sections
   sections: TemplateSection[];
-
-  // Min/Max rendelési mennyiség
-  minQuantity?: number;
-  maxQuantity?: number;
-  minQuantityMessage?: string; // "Minimum 5 db rendelhető"
-  maxQuantityMessage?: string; // "Maximum 100 db, nagyobb mennyiséghez kérj ajánlatot"
-
-  // Sávos kedvezmények
-  discountTiers?: DiscountTier[];
 
   // Expressz gyártás opció
   hasExpressOption?: boolean;
@@ -219,13 +201,6 @@ export interface CreateTemplateDto {
   scopeValues?: string[];
   sections: Omit<TemplateSection, 'id'>[];
 
-  // Opcionális mezők
-  minQuantity?: number;
-  maxQuantity?: number;
-  minQuantityMessage?: string;
-  maxQuantityMessage?: string;
-  discountTiers?: DiscountTier[];
-
   // Megjegyzés mező
   hasNotesField?: boolean;
   notesFieldLabel?: string;
@@ -239,13 +214,6 @@ export interface UpdateTemplateDto {
   scopeType?: ScopeType;
   scopeValues?: string[];
   sections?: Omit<TemplateSection, 'id'>[];
-
-  // Opcionális mezők
-  minQuantity?: number | null;
-  maxQuantity?: number | null;
-  minQuantityMessage?: string | null;
-  maxQuantityMessage?: string | null;
-  discountTiers?: DiscountTier[] | null;
 
   // Megjegyzés mező
   hasNotesField?: boolean;

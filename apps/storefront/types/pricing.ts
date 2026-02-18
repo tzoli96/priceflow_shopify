@@ -126,25 +126,6 @@ export interface TemplateField {
 }
 
 /**
- * Quantity limits info
- */
-export interface QuantityLimits {
-  minQuantity?: number;
-  maxQuantity?: number;
-  minQuantityMessage?: string;
-  maxQuantityMessage?: string;
-}
-
-/**
- * Discount tier info
- */
-export interface DiscountTier {
-  minQty: number;
-  maxQty: number | null;
-  discount: number;
-}
-
-/**
  * Quantity preset type
  */
 export type QuantityPreset = number | { label: string; value: number };
@@ -165,10 +146,6 @@ export interface ProductTemplateInfo {
     expressMultiplier?: number;
     expressLabel?: string;
     normalLabel?: string;
-    // Quantity limits
-    quantityLimits?: QuantityLimits;
-    // Discount tiers
-    discountTiers?: DiscountTier[];
     // Notes field
     hasNotesField?: boolean;
     notesFieldLabel?: string;
@@ -194,7 +171,6 @@ export interface CalculatePriceRequest {
   templateId: string;
   productId: string;
   fieldValues: Record<string, number>;
-  quantity: number;
   basePrice: number;
   isExpress?: boolean;
 }
@@ -210,10 +186,6 @@ export interface PriceCalculationResult {
   currency: string;
   templateId: string;
   templateName: string;
-  // Discount info
-  discountPercent?: number;
-  discountAmount?: number;
-  priceBeforeDiscount?: number;
   // Express info
   isExpress?: boolean;
   expressMultiplier?: number;

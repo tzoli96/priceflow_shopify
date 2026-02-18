@@ -59,25 +59,6 @@ export class TemplateFieldResponseDto {
 }
 
 /**
- * Quantity limits info for template
- */
-export class QuantityLimitsDto {
-  minQuantity?: number;
-  maxQuantity?: number;
-  minQuantityMessage?: string;
-  maxQuantityMessage?: string;
-}
-
-/**
- * Discount tier info for template
- */
-export class DiscountTierDto {
-  minQty: number;
-  maxQty: number | null;
-  discount: number;
-}
-
-/**
  * Response DTO for template section
  */
 export class TemplateSectionResponseDto {
@@ -109,12 +90,6 @@ export class TemplateInfoResponseDto {
   expressMultiplier?: number;
   expressLabel?: string;
   normalLabel?: string;
-
-  // Quantity limits
-  quantityLimits?: QuantityLimitsDto;
-
-  // Discount tiers
-  discountTiers?: DiscountTierDto[];
 
   // Notes field
   hasNotesField?: boolean;

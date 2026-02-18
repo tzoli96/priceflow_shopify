@@ -2,7 +2,6 @@ import {
   IsString,
   IsNotEmpty,
   IsNumber,
-  IsPositive,
   IsObject,
   IsBoolean,
   IsOptional,
@@ -21,7 +20,6 @@ import {
  *     "height_cm": 150,
  *     "material": 1
  *   },
- *   "quantity": 1,
  *   "basePrice": 5000,
  *   "isExpress": false
  * }
@@ -51,15 +49,6 @@ export class CalculatePriceRequestDto {
   @IsObject()
   @IsNotEmpty()
   fieldValues: Record<string, number>;
-
-  /**
-   * Product quantity
-   * @example 1
-   */
-  @IsNumber()
-  @IsPositive()
-  @Min(1)
-  quantity: number;
 
   /**
    * Base product price (original Shopify price)
@@ -98,7 +87,7 @@ export class CalculatePriceResponseDto {
   calculatedPrice: number;
 
   /**
-   * Original price (basePrice * quantity)
+   * Original base price
    * @example 5000
    */
   originalPrice: number;
@@ -129,25 +118,6 @@ export class CalculatePriceResponseDto {
    * Template name
    */
   templateName: string;
-
-  // Discount info
-  /**
-   * Discount percentage applied
-   * @example 10
-   */
-  discountPercent?: number;
-
-  /**
-   * Discount amount in currency
-   * @example 1250
-   */
-  discountAmount?: number;
-
-  /**
-   * Price before discount was applied
-   * @example 13750
-   */
-  priceBeforeDiscount?: number;
 
   // Express option info
   /**

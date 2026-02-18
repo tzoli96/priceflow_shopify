@@ -66,8 +66,8 @@ export class TemplateService {
       // Convert type to string in case it's an enum
       const fieldType = String(field.type);
 
-      // NUMBER típusú mezők közvetlenül a kulcsukkal elérhetők
-      if (fieldType === 'NUMBER') {
+      // NUMBER és QUANTITY_SELECTOR mezők közvetlenül a kulcsukkal elérhetők
+      if (fieldType === 'NUMBER' || fieldType === 'QUANTITY_SELECTOR') {
         variables.push({ key: field.key });
       }
 
@@ -173,17 +173,6 @@ export class TemplateService {
     );
 
     // Set additional pricing options
-    if (dto.minQuantity !== undefined) template.minQuantity = dto.minQuantity;
-    if (dto.maxQuantity !== undefined) template.maxQuantity = dto.maxQuantity;
-    if (dto.minQuantityMessage !== undefined) template.minQuantityMessage = dto.minQuantityMessage;
-    if (dto.maxQuantityMessage !== undefined) template.maxQuantityMessage = dto.maxQuantityMessage;
-    if (dto.discountTiers !== undefined) {
-      template.discountTiers = dto.discountTiers.map((tier) => ({
-        minQty: tier.minQty,
-        maxQty: tier.maxQty ?? null,
-        discount: tier.discount,
-      }));
-    }
     if (dto.hasExpressOption !== undefined) template.hasExpressOption = dto.hasExpressOption;
     if (dto.expressMultiplier !== undefined) template.expressMultiplier = dto.expressMultiplier;
     if (dto.expressLabel !== undefined) template.expressLabel = dto.expressLabel;
@@ -321,19 +310,6 @@ export class TemplateService {
     }
 
     // Update pricing options
-    if (dto.minQuantity !== undefined) template.minQuantity = dto.minQuantity;
-    if (dto.maxQuantity !== undefined) template.maxQuantity = dto.maxQuantity;
-    if (dto.minQuantityMessage !== undefined) template.minQuantityMessage = dto.minQuantityMessage;
-    if (dto.maxQuantityMessage !== undefined) template.maxQuantityMessage = dto.maxQuantityMessage;
-    if (dto.discountTiers !== undefined) {
-      template.discountTiers = dto.discountTiers
-        ? dto.discountTiers.map((tier) => ({
-            minQty: tier.minQty,
-            maxQty: tier.maxQty ?? null,
-            discount: tier.discount,
-          }))
-        : null;
-    }
     if (dto.hasExpressOption !== undefined) template.hasExpressOption = dto.hasExpressOption;
     if (dto.expressMultiplier !== undefined) template.expressMultiplier = dto.expressMultiplier;
     if (dto.expressLabel !== undefined) template.expressLabel = dto.expressLabel;

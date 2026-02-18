@@ -222,9 +222,4 @@ export const FORMULA_SYSTEM_VARIABLES = [
     description: 'Termék alap ára (Shopify-ból)',
     example: 'base_price + 500',
   },
-  {
-    name: 'quantity',
-    description: 'Rendelési mennyiség - csak ha van QUANTITY_SELECTOR mező!',
-    example: 'base_price * quantity',
-  },
 ] as const;

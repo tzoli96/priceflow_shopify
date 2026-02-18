@@ -103,7 +103,6 @@ export class PricingController {
    *     "height_cm": 150,
    *     "material": 1
    *   },
-   *   "quantity": 1,
    *   "basePrice": 5000
    * }
    *
@@ -129,7 +128,6 @@ export class PricingController {
       shopDomain,
       dto.templateId,
       dto.fieldValues,
-      dto.quantity,
       dto.basePrice,
       { isExpress: dto.isExpress },
     );

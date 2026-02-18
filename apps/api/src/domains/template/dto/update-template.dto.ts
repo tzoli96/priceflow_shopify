@@ -12,7 +12,7 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ScopeType } from '@prisma/client';
-import { CreateTemplateFieldDto, CreateTemplateSectionDto, DiscountTierDto } from './create-template.dto';
+import { CreateTemplateFieldDto, CreateTemplateSectionDto } from './create-template.dto';
 
 /**
  * Update Template DTO
@@ -66,34 +66,6 @@ export class UpdateTemplateDto {
   @IsBoolean()
   @IsOptional()
   isActive?: boolean;
-
-  // Min/Max rendelési mennyiség
-  @IsNumber()
-  @IsOptional()
-  @Min(1)
-  minQuantity?: number | null;
-
-  @IsNumber()
-  @IsOptional()
-  @Min(1)
-  maxQuantity?: number | null;
-
-  @IsString()
-  @IsOptional()
-  @MaxLength(500)
-  minQuantityMessage?: string | null;
-
-  @IsString()
-  @IsOptional()
-  @MaxLength(500)
-  maxQuantityMessage?: string | null;
-
-  // Sávos kedvezmények
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => DiscountTierDto)
-  @IsOptional()
-  discountTiers?: DiscountTierDto[] | null;
 
   // Expressz gyártás opció
   @IsBoolean()

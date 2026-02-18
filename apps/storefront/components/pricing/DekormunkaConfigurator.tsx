@@ -69,7 +69,6 @@ export function DekormunkaConfigurator({
 
   // Form state
   const [fieldValues, setFieldValues] = useState<Record<string, any>>({});
-  const [quantity, setQuantity] = useState(1);
   const [isExpress, setIsExpress] = useState(false);
   const [notes, setNotes] = useState('');
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
@@ -78,9 +77,6 @@ export function DekormunkaConfigurator({
   // Price calculation state
   const [priceResult, setPriceResult] = useState<PriceCalculationResult | null>(null);
   const [calculating, setCalculating] = useState(false);
-
-  // Quantity validation
-  const [quantityError, setQuantityError] = useState<string | null>(null);
 
   // Mobile sticky visibility - hide when full summary is visible
   const [hideMobileSticky, setHideMobileSticky] = useState(false);
@@ -184,7 +180,6 @@ export function DekormunkaConfigurator({
         templateId: templateInfo.template.id,
         productId,
         fieldValues: numericValues,
-        quantity,
         basePrice,
         isExpress,
       });
@@ -194,7 +189,7 @@ export function DekormunkaConfigurator({
     } finally {
       setCalculating(false);
     }
-  }, [templateInfo, fieldValues, quantity, basePrice, isExpress, productId]);
+  }, [templateInfo, fieldValues, basePrice, isExpress, productId]);
 
   // Debounced price calculation
   useEffect(() => {
@@ -205,23 +200,6 @@ export function DekormunkaConfigurator({
     }, 300);
     return () => clearTimeout(timer);
   }, [calculatePrice, templateInfo?.hasTemplate]);
-
-  // Validate quantity
-  useEffect(() => {
-    const limits = templateInfo?.template?.quantityLimits;
-    if (!limits) {
-      setQuantityError(null);
-      return;
-    }
-
-    if (limits.minQuantity && quantity < limits.minQuantity) {
-      setQuantityError(limits.minQuantityMessage || `Minimum: ${limits.minQuantity} db`);
-    } else if (limits.maxQuantity && quantity > limits.maxQuantity) {
-      setQuantityError(limits.maxQuantityMessage || `Maximum: ${limits.maxQuantity} db`);
-    } else {
-      setQuantityError(null);
-    }
-  }, [quantity, templateInfo?.template?.quantityLimits]);
 
   // Intersection Observer for mobile sticky behavior
   useEffect(() => {
@@ -314,11 +292,15 @@ export function DekormunkaConfigurator({
 
   // Handle add to cart
   const handleAddToCart = () => {
-    if (!priceResult || !templateInfo?.template || quantityError) return;
+    if (!priceResult || !templateInfo?.template) return;
 
     const properties: Record<string, any> = {};
     // Get all fields from sections
     const allFields = (templateInfo.template.sections || []).flatMap((s) => s.fields || []);
+
+    // Cart quantity = QUANTITY_SELECTOR mező értéke
+    const quantityField = allFields.find((f) => f.type === 'QUANTITY_SELECTOR');
+    const cartQuantity = quantityField ? (Number(fieldValues[quantityField.key]) || 1) : 1;
     allFields.forEach((field) => {
       const displayValue = getFieldDisplayValue(field);
       if (displayValue) {
@@ -330,10 +312,6 @@ export function DekormunkaConfigurator({
       properties['Gyártás'] = templateInfo.template.expressLabel || 'Expressz';
     } else if (templateInfo.template.hasExpressOption) {
       properties['Gyártás'] = templateInfo.template.normalLabel || 'Normál';
-    }
-
-    if (priceResult.discountPercent) {
-      properties['Kedvezmény'] = `-${priceResult.discountPercent}%`;
     }
 
     if (notes && templateInfo.template.hasNotesField) {
@@ -353,8 +331,8 @@ export function DekormunkaConfigurator({
       variantId,
       productTitle,
       productImage,
-      quantity,
-      finalPrice: priceResult.calculatedPrice / quantity,
+      quantity: cartQuantity,
+      finalPrice: priceResult.calculatedPrice / cartQuantity,
       finalLinePrice: priceResult.calculatedPrice,
       properties,
       isExpress,
@@ -375,7 +353,7 @@ export function DekormunkaConfigurator({
         if (value === undefined || value === '' || value === null) return false;
       }
     }
-    return !quantityError;
+    return true;
   };
 
   // Calculate m² from width and height
@@ -464,53 +442,6 @@ export function DekormunkaConfigurator({
             // Built-in section content
             const getBuiltInContent = () => {
               switch (section.builtInType) {
-                case 'QUANTITY':
-                  return (
-                    <div className="dekormunka-quantity-section">
-                      <div className="dekormunka-quantity-controls">
-                        <button
-                          type="button"
-                          className="dekormunka-qty-btn"
-                          onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                          disabled={quantity <= 1}
-                        >
-                          -
-                        </button>
-                        <input
-                          type="number"
-                          className="dekormunka-qty-input"
-                          value={quantity}
-                          onChange={(e) => setQuantity(Math.max(1, Number(e.target.value)))}
-                          min={1}
-                        />
-                        <button
-                          type="button"
-                          className="dekormunka-qty-btn"
-                          onClick={() => setQuantity(quantity + 1)}
-                        >
-                          +
-                        </button>
-                      </div>
-                      <div className="dekormunka-qty-presets">
-                        {(template.quantityPresets || [1, 3, 10]).map((preset, idx) => {
-                          const presetValue = typeof preset === 'number' ? preset : preset.value;
-                          const presetLabel = typeof preset === 'number' ? `${preset} db` : preset.label;
-                          return (
-                            <button
-                              key={idx}
-                              type="button"
-                              onClick={() => setQuantity(presetValue)}
-                              className={`dekormunka-qty-preset ${quantity === presetValue ? 'selected' : ''}`}
-                            >
-                              {presetLabel}
-                            </button>
-                          );
-                        })}
-                      </div>
-                      {quantityError && <div className="dekormunka-qty-error">{quantityError}</div>}
-                    </div>
-                  );
-
                 case 'EXPRESS':
                   return (
                     <div className="dekormunka-express-section">
@@ -603,23 +534,15 @@ export function DekormunkaConfigurator({
           {/* Mobile sticky mini summary */}
           <div className={`dekormunka-summary-mobile-sticky ${hideMobileSticky ? 'hidden' : ''}`}>
             <div className="dekormunka-summary-mobile">
-              <span className="dekormunka-summary-mobile-quantity">{quantity} db</span>
               <div className="dekormunka-summary-mobile-price">
                 {calculating ? (
                   <div className="dekormunka-calculating">
                     <div className="dekormunka-spinner-small" />
                   </div>
                 ) : (
-                  <>
-                    {priceResult?.priceBeforeDiscount && priceResult.priceBeforeDiscount !== priceResult.calculatedPrice && (
-                      <span className="dekormunka-original-price">
-                        {formatPrice(priceResult.priceBeforeDiscount)}
-                      </span>
-                    )}
-                    <span className="dekormunka-final-price">
-                      {priceResult ? formatPrice(priceResult.calculatedPrice) : '-'}
-                    </span>
-                  </>
+                  <span className="dekormunka-final-price">
+                    {priceResult ? formatPrice(priceResult.calculatedPrice) : '-'}
+                  </span>
                 )}
               </div>
             </div>
@@ -682,11 +605,6 @@ export function DekormunkaConfigurator({
                   );
                 })}
 
-              <div className="dekormunka-summary-item">
-                <span className="dekormunka-summary-label">Mennyiség:</span>
-                <span className="dekormunka-summary-value">{quantity} db</span>
-              </div>
-
               {/* m² calculation */}
               {(() => {
                 const sqm = calculateSquareMeters();
@@ -725,15 +643,6 @@ export function DekormunkaConfigurator({
               )}
             </div>
 
-            {/* Discount badge */}
-            {priceResult?.discountPercent && priceResult.discountPercent > 0 && (
-              <div className="dekormunka-summary-discount">
-                <span className="dekormunka-discount-badge">
-                  -{priceResult.discountPercent}% kedvezmény
-                </span>
-              </div>
-            )}
-
             {/* Total price */}
             <div className="dekormunka-summary-total">
               {calculating ? (
@@ -742,16 +651,9 @@ export function DekormunkaConfigurator({
                   <span>Számítás...</span>
                 </div>
               ) : (
-                <>
-                  {priceResult?.priceBeforeDiscount && priceResult.priceBeforeDiscount !== priceResult.calculatedPrice && (
-                    <span className="dekormunka-original-price">
-                      {formatPrice(priceResult.priceBeforeDiscount)}
-                    </span>
-                  )}
-                  <span className="dekormunka-final-price">
-                    {priceResult ? formatPrice(priceResult.calculatedPrice) : '-'}
-                  </span>
-                </>
+                <span className="dekormunka-final-price">
+                  {priceResult ? formatPrice(priceResult.calculatedPrice) : '-'}
+                </span>
               )}
             </div>
 

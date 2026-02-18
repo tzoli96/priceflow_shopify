@@ -8,7 +8,8 @@ async function bootstrap() {
   // Enable CORS for frontend and Shopify stores
   app.enableCors({
     origin: [
-      'http://localhost:3000',                    // Development - Next.js
+      'http://localhost:3000',                    // Development - Admin
+      'http://localhost:3001',                    // Development - Storefront
       'https://app.teszt.uk',                     // Production
       /\.myshopify\.com$/,                        // All Shopify stores
     ],

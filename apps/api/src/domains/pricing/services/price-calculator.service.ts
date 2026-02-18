@@ -30,9 +30,6 @@ export interface PriceCalculationResult {
   templateId: string;
   templateName: string;
   // Discount info
-  discountPercent?: number;
-  discountAmount?: number;
-  priceBeforeDiscount?: number;
   // Express option info
   isExpress?: boolean;
   expressMultiplier?: number;
@@ -60,25 +57,6 @@ export interface CalculationOptions {
 }
 
 /**
- * Quantity limits info
- */
-export interface QuantityLimitsInfo {
-  minQuantity?: number;
-  maxQuantity?: number;
-  minQuantityMessage?: string;
-  maxQuantityMessage?: string;
-}
-
-/**
- * Discount tier info for display
- */
-export interface DiscountTierInfo {
-  minQty: number;
-  maxQty: number | null;
-  discount: number;
-}
-
-/**
  * Template metadata for product
  */
 export interface ProductTemplateInfo {
@@ -94,10 +72,6 @@ export interface ProductTemplateInfo {
     expressMultiplier?: number;
     expressLabel?: string;
     normalLabel?: string;
-    // Quantity limits
-    quantityLimits?: QuantityLimitsInfo;
-    // Discount tiers
-    discountTiers?: DiscountTierInfo[];
     // Notes field
     hasNotesField?: boolean;
     notesFieldLabel?: string;
@@ -233,22 +207,6 @@ export class PriceCalculatorService {
       return { hasTemplate: false };
     }
 
-    // Build quantity limits if any are set
-    const quantityLimits: QuantityLimitsInfo | undefined =
-      matchingTemplate.minQuantity ||
-      matchingTemplate.maxQuantity ||
-      matchingTemplate.minQuantityMessage ||
-      matchingTemplate.maxQuantityMessage
-        ? {
-            minQuantity: matchingTemplate.minQuantity ?? undefined,
-            maxQuantity: matchingTemplate.maxQuantity ?? undefined,
-            minQuantityMessage:
-              matchingTemplate.minQuantityMessage ?? undefined,
-            maxQuantityMessage:
-              matchingTemplate.maxQuantityMessage ?? undefined,
-          }
-        : undefined;
-
     // Map sections (all fields are in sections)
     const sections = (matchingTemplate.sections || []).map((s) => this.mapSectionToDTO(s));
 
@@ -265,10 +223,6 @@ export class PriceCalculatorService {
         expressMultiplier: matchingTemplate.expressMultiplier ?? undefined,
         expressLabel: matchingTemplate.expressLabel ?? undefined,
         normalLabel: matchingTemplate.normalLabel ?? undefined,
-        // Quantity limits
-        quantityLimits,
-        // Discount tiers
-        discountTiers: matchingTemplate.discountTiers ?? undefined,
         // Notes field
         hasNotesField: matchingTemplate.hasNotesField ?? false,
         notesFieldLabel: matchingTemplate.notesFieldLabel ?? undefined,
@@ -285,7 +239,6 @@ export class PriceCalculatorService {
    * @param shopDomain - Shop domain
    * @param templateId - Template ID
    * @param fieldValues - Mező értékek a felhasználótól
-   * @param quantity - Mennyiség
    * @param basePrice - Termék alapára
    * @param options - Calculation options (isExpress, etc.)
    * @returns Calculation result
@@ -294,7 +247,6 @@ export class PriceCalculatorService {
     shopDomain: string,
     templateId: string,
     fieldValues: Record<string, any>, // Can be number, string, or string[] (for EXTRAS)
-    quantity: number,
     basePrice: number,
     options: CalculationOptions = {},
   ): Promise<PriceCalculationResult> {
@@ -321,17 +273,10 @@ export class PriceCalculatorService {
     // Convert field values to numeric context (including _price for option fields)
     const numericFieldValues = this.convertFieldValuesToNumeric(allFields, fieldValues);
 
-    // Check if there's a QUANTITY_SELECTOR field with useInFormula=true
-    const hasQuantityField = allFields.some(
-      field => field.type === 'QUANTITY_SELECTOR' && field.useInFormula
-    );
-
-    // Prepare context with all variables
-    // Only include quantity if there's a QUANTITY_SELECTOR field
+    // Prepare formula context: base_price + all field values
     const context = this.formulaEvaluator.prepareContext(
       numericFieldValues,
       basePrice,
-      hasQuantityField ? quantity : undefined,
     );
 
     // Evaluate formula - base_price is available as a variable in the formula
@@ -363,40 +308,22 @@ export class PriceCalculatorService {
       unitPrice = unitPrice * expressMultiplier;
     }
 
-    // Formula result is already the total price (quantity can be used in formula)
-    // No automatic multiplication by quantity
-    let calculatedPrice = unitPrice;
-    const priceBeforeDiscount = calculatedPrice;
-
-    // Apply discount tier if applicable
-    const discountPercent = this.calculateDiscountPercent(
-      template.discountTiers,
-      quantity,
-    );
-    let discountAmount = 0;
-
-    if (discountPercent > 0) {
-      discountAmount = calculatedPrice * (discountPercent / 100);
-      calculatedPrice = calculatedPrice - discountAmount;
-    }
+    // Formula result is the total price
+    const calculatedPrice = unitPrice;
 
     // Generate breakdown with field details
     const breakdown = this.generateBreakdown(
       template,
       context,
       normalUnitPrice,
-      quantity,
       basePrice,
       isExpress,
       expressMultiplier,
-      discountPercent,
-      discountAmount,
       allFields,
       fieldValues,
     );
 
     // Calculate normal and express prices for display
-    // Formula already includes quantity, so no multiplication needed
     const normalPrice = normalUnitPrice;
     const expressPrice = template.hasExpressOption
       ? normalUnitPrice * expressMultiplier
@@ -410,11 +337,6 @@ export class PriceCalculatorService {
       currency: 'HUF', // TODO: Get from shop settings
       templateId: template.id,
       templateName: template.name,
-      // Discount info
-      discountPercent: discountPercent > 0 ? discountPercent : undefined,
-      discountAmount: discountAmount > 0 ? discountAmount : undefined,
-      priceBeforeDiscount:
-        discountPercent > 0 ? priceBeforeDiscount : undefined,
       // Express info
       isExpress,
       expressMultiplier: template.hasExpressOption
@@ -423,36 +345,6 @@ export class PriceCalculatorService {
       normalPrice,
       expressPrice,
     };
-  }
-
-  /**
-   * Calculate discount percent based on quantity and discount tiers
-   */
-  private calculateDiscountPercent(
-    discountTiers: Array<{
-      minQty: number;
-      maxQty: number | null;
-      discount: number;
-    }> | null,
-    quantity: number,
-  ): number {
-    if (!discountTiers || discountTiers.length === 0) {
-      return 0;
-    }
-
-    // Sort tiers by minQty descending to find the highest applicable tier
-    const sortedTiers = [...discountTiers].sort((a, b) => b.minQty - a.minQty);
-
-    for (const tier of sortedTiers) {
-      const meetsMin = quantity >= tier.minQty;
-      const meetsMax = tier.maxQty === null || quantity <= tier.maxQty;
-
-      if (meetsMin && meetsMax) {
-        return tier.discount;
-      }
-    }
-
-    return 0;
   }
 
   /**
@@ -686,12 +578,9 @@ export class PriceCalculatorService {
     template: TemplateModel,
     context: Record<string, number>,
     unitPrice: number,
-    quantity: number,
     basePrice: number,
     isExpress: boolean = false,
     expressMultiplier: number = 1,
-    discountPercent: number = 0,
-    discountAmount: number = 0,
     allFields: TemplateFieldModel[] = [],
     fieldValues: Record<string, any> = {},
   ): PriceBreakdownItem[] {
@@ -768,25 +657,9 @@ export class PriceCalculatorService {
       });
     }
 
-    // 5. Részösszeg (formula már tartalmazza a mennyiséget)
-    const effectiveUnitPrice = isExpress
-      ? unitPrice * expressMultiplier
-      : unitPrice;
-
-    // 6. Mennyiség - már a formulában szerepel, nem kell külön megjeleníteni
-
-    // 7. Mennyiségi kedvezmény
-    if (discountPercent > 0) {
-      breakdown.push({
-        label: `Mennyiségi kedvezmény (-${discountPercent}%)`,
-        value: -discountAmount,
-        type: 'addon',
-      });
-    }
-
-    // 8. Végösszeg
-    const subtotal = effectiveUnitPrice;
-    const finalTotal = subtotal - discountAmount;
+    // 5. Végösszeg
+    const effectiveUnitPrice = isExpress ? unitPrice * expressMultiplier : unitPrice;
+    const finalTotal = effectiveUnitPrice;
     breakdown.push({
       label: 'Végösszeg',
       value: finalTotal,

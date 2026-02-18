@@ -14,13 +14,11 @@ interface ConfigSummaryProps {
   productImage: string;
   fields: TemplateField[];
   fieldValues: Record<string, any>;
-  quantity: number;
   isExpress: boolean;
   expressLabel?: string;
   normalLabel?: string;
   priceResult: PriceCalculationResult | null;
   calculating: boolean;
-  discountPercent?: number;
   hasNotesField?: boolean;
   notesFieldLabel?: string;
   notes?: string;
@@ -34,13 +32,11 @@ export const ConfigSummary: React.FC<ConfigSummaryProps> = ({
   productImage,
   fields,
   fieldValues,
-  quantity,
   isExpress,
   expressLabel = 'Expressz gyártás',
   normalLabel = 'Normál gyártás',
   priceResult,
   calculating,
-  discountPercent,
   hasNotesField,
   notesFieldLabel,
   notes,
@@ -141,12 +137,6 @@ export const ConfigSummary: React.FC<ConfigSummaryProps> = ({
             </ul>
           )}
 
-          {/* Quantity */}
-          <div className="flex justify-between items-center text-sm pt-2 border-t border-gray-100">
-            <span className="text-gray-600">Mennyiség:</span>
-            <span className="font-medium text-gray-900">{quantity} db</span>
-          </div>
-
           {/* Express/Normal */}
           {(expressLabel || normalLabel) && (
             <div className="flex justify-between items-center text-sm">
@@ -196,20 +186,6 @@ export const ConfigSummary: React.FC<ConfigSummaryProps> = ({
             </div>
           )}
 
-          {/* Discount badge */}
-          {discountPercent && discountPercent > 0 && (
-            <div className="flex justify-between items-center text-sm mb-2">
-              <span className="inline-flex items-center px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">
-                -{discountPercent}% kedvezmény
-              </span>
-              {priceResult?.priceBeforeDiscount && (
-                <span className="text-gray-400 line-through text-sm">
-                  {formatPrice(priceResult.priceBeforeDiscount)}
-                </span>
-              )}
-            </div>
-          )}
-
           {/* Final price */}
           <div className="flex justify-between items-center">
             <span className="text-gray-700 font-medium">Összesen:</span>
@@ -225,12 +201,6 @@ export const ConfigSummary: React.FC<ConfigSummaryProps> = ({
             )}
           </div>
 
-          {/* Unit price if quantity > 1 */}
-          {quantity > 1 && priceResult && (
-            <div className="text-right text-xs text-gray-500 mt-1">
-              ({formatPrice(priceResult.calculatedPrice / quantity)} / db)
-            </div>
-          )}
         </div>
 
         {/* Add to cart button */}
