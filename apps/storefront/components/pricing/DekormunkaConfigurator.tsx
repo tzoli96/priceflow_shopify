@@ -432,6 +432,39 @@ export function DekormunkaConfigurator({
 
   return (
     <div className={`dekormunka-configurator ${className}`}>
+      {/* Mobile sticky bottom bar */}
+      <div className={`dekormunka-sticky-bar ${hideMobileSticky ? 'hidden' : ''}`}>
+        <div className="dekormunka-sticky-price">
+          <svg className="dekormunka-sticky-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+          </svg>
+          <div className="dekormunka-sticky-price-info">
+            {calculating ? (
+              <div className="dekormunka-spinner-small" />
+            ) : (
+              <>
+                <span className="dekormunka-sticky-net">
+                  {priceResult ? `${formatPrice(priceResult.calculatedPrice)} + Áfa` : '-'}
+                </span>
+                {priceResult && (
+                  <span className="dekormunka-sticky-gross">
+                    (bruttó {formatPrice(Math.round(priceResult.calculatedPrice * 1.27))})
+                  </span>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+        <button
+          type="button"
+          className="dekormunka-sticky-btn"
+          onClick={handleAddToCart}
+          disabled={!isFormValid() || calculating || !priceResult}
+        >
+          Kosárba teszem
+        </button>
+      </div>
+
       <div className="dekormunka-layout">
         {/* Left side - Form sections */}
         <div className="dekormunka-form">
@@ -531,35 +564,6 @@ export function DekormunkaConfigurator({
 
         {/* Right side - Summary sidebar */}
         <div className="dekormunka-sidebar">
-          {/* Mobile sticky mini summary */}
-          <div className={`dekormunka-summary-mobile-sticky ${hideMobileSticky ? 'hidden' : ''}`}>
-            <div className="dekormunka-summary-mobile">
-              <div className="dekormunka-summary-mobile-price">
-                {calculating ? (
-                  <div className="dekormunka-calculating">
-                    <div className="dekormunka-spinner-small" />
-                  </div>
-                ) : (
-                  <span className="dekormunka-final-price">
-                    {priceResult ? formatPrice(priceResult.calculatedPrice) : '-'}
-                  </span>
-                )}
-              </div>
-            </div>
-            {/* Mobile add to cart button in sticky */}
-            <button
-              type="button"
-              className="dekormunka-add-to-cart"
-              onClick={handleAddToCart}
-              disabled={!isFormValid() || calculating || !priceResult}
-            >
-              <svg className="dekormunka-cart-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-              </svg>
-              Kosárba teszem
-            </button>
-          </div>
-
           {/* Full summary (desktop + mobile scroll position) */}
           <div ref={fullSummaryRef} className="dekormunka-summary">
             <h3 className="dekormunka-summary-title">Összegzés</h3>
