@@ -26,7 +26,7 @@ import {
   BlockStack,
   Box,
 } from '@shopify/polaris';
-import { PlusIcon, DeleteIcon } from '@shopify/polaris-icons';
+import { PlusIcon, DeleteIcon, ArrowUpIcon, ArrowDownIcon } from '@shopify/polaris-icons';
 import type { TemplateField, FieldType, FieldOption, FieldDisplayStyle, PresetValue } from '@/types/template';
 import { ImageUploader } from '@/components/common/ImageUploader';
 import { FieldTypeSelector } from './FieldTypeSelector';
@@ -221,6 +221,16 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({
 
   const removeOption = (index: number) => {
     setOptions(options.filter((_, i) => i !== index));
+  };
+
+  const moveOption = (index: number, direction: 'up' | 'down') => {
+    const newOptions = [...options];
+    if (direction === 'up' && index > 0) {
+      [newOptions[index - 1], newOptions[index]] = [newOptions[index], newOptions[index - 1]];
+    } else if (direction === 'down' && index < newOptions.length - 1) {
+      [newOptions[index], newOptions[index + 1]] = [newOptions[index + 1], newOptions[index]];
+    }
+    setOptions(newOptions);
   };
 
   // Preset értékek kezelése
@@ -576,7 +586,7 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({
                     borderColor="border"
                   >
                     <BlockStack gap="400">
-                      {/* Header: Sorszám és törlés */}
+                      {/* Header: Sorszám, sorrendezés és törlés */}
                       <InlineStack align="space-between" blockAlign="center">
                         <Text variant="headingSm" as="h4">
                           {index + 1}. kártya
@@ -593,12 +603,26 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({
                             </span>
                           )}
                         </Text>
-                        <Button
-                          icon={DeleteIcon}
-                          tone="critical"
-                          onClick={() => removeOption(index)}
-                          accessibilityLabel="Kártya törlése"
-                        />
+                        <InlineStack gap="100">
+                          <Button
+                            icon={ArrowUpIcon}
+                            onClick={() => moveOption(index, 'up')}
+                            disabled={index === 0}
+                            accessibilityLabel="Feljebb"
+                          />
+                          <Button
+                            icon={ArrowDownIcon}
+                            onClick={() => moveOption(index, 'down')}
+                            disabled={index === options.length - 1}
+                            accessibilityLabel="Lejjebb"
+                          />
+                          <Button
+                            icon={DeleteIcon}
+                            tone="critical"
+                            onClick={() => removeOption(index)}
+                            accessibilityLabel="Kártya törlése"
+                          />
+                        </InlineStack>
                       </InlineStack>
 
                       {/* Alap mezők */}
