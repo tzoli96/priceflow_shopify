@@ -356,7 +356,15 @@ export function DekormunkaConfigurator({
     for (const field of allFields) {
       if (field.required) {
         const value = fieldValues[field.key];
-        if (value === undefined || value === '' || value === null) return false;
+        if (value === undefined || value === null) return false;
+        if (Array.isArray(value) && value.length === 0) return false;
+        // For option-based fields, empty string is valid if it's an actual option value
+        if (value === '' && field.options?.length) {
+          const isValidOption = field.options.some((o) => o.value === '');
+          if (!isValidOption) return false;
+        } else if (value === '') {
+          return false;
+        }
       }
     }
     return true;

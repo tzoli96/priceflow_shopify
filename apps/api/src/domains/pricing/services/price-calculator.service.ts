@@ -436,6 +436,12 @@ export class PriceCalculatorService {
     for (const field of requiredFields) {
       const value = values[field.key];
 
+      // For option-based fields, empty string is valid if it's an actual option value
+      if (value === '' && field.options?.length) {
+        const isValidOption = field.options.some((opt: any) => opt.value === '');
+        if (isValidOption) continue;
+      }
+
       // Check if value is missing or empty
       const isEmpty =
         value === undefined ||
