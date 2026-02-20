@@ -155,13 +155,12 @@ export const SectionEditor: React.FC<SectionEditorProps> = ({
   const [presets, setPresets] = useState<PresetValue[]>(section?.presets || []);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Generate key from title if key is empty (Hungarian-aware)
-  useEffect(() => {
+  // Generate key from title on blur (lazy - only when user leaves the title field)
+  const handleTitleBlur = () => {
     if (!section && formData.title && !formData.key) {
-      const generatedKey = generateKey(formData.title);
-      setFormData((prev) => ({ ...prev, key: generatedKey }));
+      setFormData((prev) => ({ ...prev, key: generateKey(formData.title) }));
     }
-  }, [formData.title, formData.key, section]);
+  };
 
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -256,6 +255,7 @@ export const SectionEditor: React.FC<SectionEditorProps> = ({
                 label="Szekció címe"
                 value={formData.title}
                 onChange={(value) => setFormData((prev) => ({ ...prev, title: value }))}
+                onBlur={handleTitleBlur}
                 placeholder="pl. Válassz méretet!"
                 error={errors.title}
                 autoComplete="off"

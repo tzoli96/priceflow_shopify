@@ -121,12 +121,12 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({
   const [presetValues, setPresetValues] = useState<PresetValue[]>(initPresetValues());
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Generate key from label if key is empty (Hungarian-aware)
-  useEffect(() => {
+  // Generate key from label on blur (lazy - only when user leaves the label field)
+  const handleLabelBlur = () => {
     if (!field && formData.label && !formData.key) {
       setFormData((prev) => ({ ...prev, key: generateKey(formData.label) }));
     }
-  }, [formData.label, formData.key, field]);
+  };
 
   // QUANTITY_SELECTOR mezőnél useInFormula mindig true
   useEffect(() => {
@@ -188,13 +188,17 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({
   const updateOption = (index: number, updates: Partial<FieldOption>) => {
     const newOptions = [...options];
     newOptions[index] = { ...newOptions[index], ...updates };
-
-    // Auto-generate value from label if empty (Hungarian-aware)
-    if (updates.label && !newOptions[index].value) {
-      newOptions[index].value = generateKey(updates.label);
-    }
-
     setOptions(newOptions);
+  };
+
+  // Generate option value from label on blur (lazy)
+  const handleOptionLabelBlur = (index: number) => {
+    const option = options[index];
+    if (option && option.label && !option.value) {
+      const newOptions = [...options];
+      newOptions[index] = { ...newOptions[index], value: generateKey(option.label) };
+      setOptions(newOptions);
+    }
   };
 
   const updateOptionFeature = (optionIndex: number, featureIndex: number, value: string) => {
@@ -336,6 +340,7 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({
                 label="Megjelenített név"
                 value={formData.label}
                 onChange={(value) => setFormData((prev) => ({ ...prev, label: value }))}
+                onBlur={handleLabelBlur}
                 placeholder="pl. Szélesség (cm)"
                 error={errors.label}
                 autoComplete="off"
@@ -642,6 +647,7 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({
                             label="Megnevezés"
                             value={option.label}
                             onChange={(value) => updateOption(index, { label: value })}
+                            onBlur={() => handleOptionLabelBlur(index)}
                             placeholder="pl. Standard molnió"
                             autoComplete="off"
                             requiredIndicator
@@ -808,6 +814,7 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({
                           label="Megnevezés"
                           value={option.label}
                           onChange={(value) => updateOption(index, { label: value })}
+                          onBlur={() => handleOptionLabelBlur(index)}
                           placeholder="pl. Expressz (3 munkanap)"
                           autoComplete="off"
                           requiredIndicator
@@ -906,6 +913,7 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({
                             label="Megnevezés"
                             value={option.label}
                             onChange={(value) => updateOption(index, { label: value })}
+                            onBlur={() => handleOptionLabelBlur(index)}
                             placeholder="pl. Laminálás"
                             autoComplete="off"
                             requiredIndicator
@@ -1027,6 +1035,7 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({
                             label="Megnevezés"
                             value={option.label}
                             onChange={(value) => updateOption(index, { label: value })}
+                            onBlur={() => handleOptionLabelBlur(index)}
                             placeholder="pl. Feltöltöm a grafikát"
                             autoComplete="off"
                             requiredIndicator
@@ -1159,6 +1168,7 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({
                           label="Címke (pl. '10 db')"
                           value={option.label}
                           onChange={(value) => updateOption(index, { label: value })}
+                          onBlur={() => handleOptionLabelBlur(index)}
                           placeholder="10 db"
                           autoComplete="off"
                         />
@@ -1234,6 +1244,7 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({
                             label="Címke"
                             value={option.label}
                             onChange={(value) => updateOption(index, { label: value })}
+                            onBlur={() => handleOptionLabelBlur(index)}
                             placeholder="pl. PVC anyag"
                             autoComplete="off"
                           />
