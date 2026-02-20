@@ -42,6 +42,22 @@ export class FormulaEvaluatorService {
     // Save reference to the original evaluate function before disabling it
     this.safeEvaluate = this.math.evaluate.bind(this.math);
 
+    // Register custom if() function for conditional expressions
+    // Usage: if(condition, trueValue, falseValue)
+    // Example: if(width > 100, price * 1.5, price)
+    this.math.import(
+      {
+        if: function (
+          condition: boolean | number,
+          trueValue: number,
+          falseValue: number,
+        ): number {
+          return condition ? trueValue : falseValue;
+        },
+      },
+      { override: false },
+    );
+
     // Configure limited functions for security
     // This prevents users from calling these functions within formulas
     this.math.import(
@@ -67,30 +83,6 @@ export class FormulaEvaluatorService {
       },
       { override: true },
     );
-  }
-
-  /**
-   * Ternary operátor konverzió
-   *
-   * Konvertálja a ternary operátorokat mathjs if() függvényre
-   * pl: "a > 1 ? b : c" → "if(a > 1, b, c)"
-   */
-  private convertTernaryToIf(formula: string): string {
-    // Simple ternary pattern: condition ? trueValue : falseValue
-    const ternaryRegex = /\(([^?]+)\s*\?\s*([^:]+)\s*:\s*([^)]+)\)/g;
-
-    let result = formula;
-    let match;
-
-    // Process nested ternaries from inside out
-    while ((match = ternaryRegex.exec(result)) !== null) {
-      const [fullMatch, condition, trueValue, falseValue] = match;
-      const replacement = `if(${condition.trim()}, ${trueValue.trim()}, ${falseValue.trim()})`;
-      result = result.replace(fullMatch, replacement);
-      ternaryRegex.lastIndex = 0; // Reset to catch nested replacements
-    }
-
-    return result;
   }
 
   /**
@@ -121,10 +113,7 @@ export class FormulaEvaluatorService {
 
     try {
       // Collapse newlines so multiline formulas don't break (mathjs treats \n as statement separator)
-      const singleLineFormula = formula.replace(/\s*\n\s*/g, ' ');
-
-      // Convert ternary operators to if() function
-      const processedFormula = this.convertTernaryToIf(singleLineFormula);
+      const processedFormula = formula.replace(/\s*\n\s*/g, ' ');
 
       // Create a safe scope with only the provided context variables
       const scope = { ...context };

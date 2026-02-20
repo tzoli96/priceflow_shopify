@@ -210,6 +210,12 @@ export const FORMULA_OPERATORS = [
   { symbol: '^', description: 'Hatványozás' },
   { symbol: '(', description: 'Bal zárójel' },
   { symbol: ')', description: 'Jobb zárójel' },
+  { symbol: '>', description: 'Nagyobb mint' },
+  { symbol: '<', description: 'Kisebb mint' },
+  { symbol: '>=', description: 'Nagyobb vagy egyenlő' },
+  { symbol: '<=', description: 'Kisebb vagy egyenlő' },
+  { symbol: '==', description: 'Egyenlő' },
+  { symbol: '!=', description: 'Nem egyenlő' },
 ] as const;
 
 /**

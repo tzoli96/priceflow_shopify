@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { create, all, MathJsInstance } from 'mathjs';
 
 /**
  * Formula Validator Service
@@ -29,6 +30,24 @@ import { Injectable } from '@nestjs/common';
  */
 @Injectable()
 export class FormulaValidatorService {
+  private readonly math: MathJsInstance;
+
+  constructor() {
+    this.math = create(all);
+    this.math.import(
+      {
+        if: function (
+          condition: boolean | number,
+          trueValue: number,
+          falseValue: number,
+        ): number {
+          return condition ? trueValue : falseValue;
+        },
+      },
+      { override: false },
+    );
+  }
+
   private readonly allowedFunctions = [
     'floor',
     'ceil',
@@ -275,19 +294,18 @@ export class FormulaValidatorService {
     testValues: Record<string, number>,
   ): { success: boolean; result?: number; error?: string } {
     try {
-      // Replace variables with test values
-      let evaluableFormula = formula;
+      // Collapse newlines (mathjs treats \n as statement separator)
+      const processedFormula = formula.replace(/\s*\n\s*/g, ' ');
 
-      for (const [key, value] of Object.entries(testValues)) {
-        const regex = new RegExp(`\\b${key}\\b`, 'g');
-        evaluableFormula = evaluableFormula.replace(regex, value.toString());
+      // Evaluate using mathjs (same engine as production)
+      const scope = { ...testValues };
+      const result = this.math.evaluate(processedFormula, scope);
+
+      if (typeof result !== 'number' || !isFinite(result)) {
+        return { success: false, error: 'Formula did not return a valid number' };
       }
 
-      // Simple math eval (csak tesztelésre!)
-      // Production-ben: mathjs library restricted scope
-      const result = Function(`"use strict"; return (${evaluableFormula})`)();
-
-      return { success: true, result };
+      return { success: true, result: Math.round(result * 100) / 100 };
     } catch (error) {
       return { success: false, error: error.message };
     }
