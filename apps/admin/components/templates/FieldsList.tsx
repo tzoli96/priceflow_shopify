@@ -21,9 +21,11 @@ import type { TemplateField, FieldType, FieldDisplayStyle } from '@/types/templa
 interface FieldsListProps {
   fields: TemplateField[];
   onChange: (fields: TemplateField[]) => void;
+  allSectionKeys?: string[];
+  pricingFormula?: string;
 }
 
-export const FieldsList: React.FC<FieldsListProps> = ({ fields, onChange }) => {
+export const FieldsList: React.FC<FieldsListProps> = ({ fields, onChange, allSectionKeys = [], pricingFormula = '' }) => {
   const [editingField, setEditingField] = useState<TemplateField | null>(null);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [showEditor, setShowEditor] = useState(false);
@@ -160,6 +162,8 @@ export const FieldsList: React.FC<FieldsListProps> = ({ fields, onChange }) => {
           <FieldEditor
             field={editingField}
             existingKeys={fields.map((f) => f.key)}
+            allSectionKeys={allSectionKeys}
+            pricingFormula={pricingFormula}
             fieldCount={fields.length}
             onSave={handleSave}
             onClose={() => {
@@ -263,6 +267,8 @@ export const FieldsList: React.FC<FieldsListProps> = ({ fields, onChange }) => {
           existingKeys={fields
             .map((f) => f.key)
             .filter((_, i) => i !== editingIndex)}
+          allSectionKeys={allSectionKeys}
+          pricingFormula={pricingFormula}
           fieldCount={fields.length}
           onSave={handleSave}
           onClose={() => {

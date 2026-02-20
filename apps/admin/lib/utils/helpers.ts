@@ -19,6 +19,24 @@ export function slugify(text: string): string {
     .replace(/^-+|-+$/g, '');
 }
 
+/**
+ * Generate a formula-safe key from a label (Hungarian-aware)
+ *
+ * Strips diacritics (á→a, é→e, ö→o, etc.) then keeps only [a-z0-9_]
+ * Examples:
+ *   "Magasság"   → "magassag"
+ *   "Mennyiség"  → "mennyiseg"
+ *   "Szélesség (cm)" → "szelesseg_cm"
+ */
+export function generateKey(text: string): string {
+  return text
+    .normalize('NFD')                   // decompose accents: á → a + combining accent
+    .replace(/[\u0300-\u036f]/g, '')    // strip combining diacritical marks
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '');
+}
+
 export function truncate(text: string, maxLength: number): string {
   if (text.length <= maxLength) return text;
   return text.slice(0, maxLength) + '...';

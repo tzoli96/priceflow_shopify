@@ -30,6 +30,7 @@ import { PlusIcon, DeleteIcon, ArrowUpIcon, ArrowDownIcon } from '@shopify/polar
 import type { TemplateField, FieldType, FieldOption, FieldDisplayStyle, PresetValue } from '@/types/template';
 import { ImageUploader } from '@/components/common/ImageUploader';
 import { FieldTypeSelector } from './FieldTypeSelector';
+import { generateKey } from '@/lib/utils/helpers';
 
 const DISPLAY_STYLE_OPTIONS = [
   { label: 'Alapértelmezett', value: 'default' },
@@ -40,6 +41,8 @@ const DISPLAY_STYLE_OPTIONS = [
 interface FieldEditorProps {
   field: TemplateField | null;
   existingKeys: string[];
+  allSectionKeys?: string[]; // All section keys for cross-namespace collision warning
+  pricingFormula?: string; // Current formula for key-in-use warnings
   fieldCount?: number; // Hány mező van már - order alapértékhez
   onSave: (field: Omit<TemplateField, 'id'>) => void;
   onClose: () => void;
@@ -48,6 +51,8 @@ interface FieldEditorProps {
 export const FieldEditor: React.FC<FieldEditorProps> = ({
   field,
   existingKeys,
+  allSectionKeys = [],
+  pricingFormula = '',
   fieldCount = 0,
   onSave,
   onClose,
@@ -116,14 +121,10 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({
   const [presetValues, setPresetValues] = useState<PresetValue[]>(initPresetValues());
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Generate key from label if key is empty
+  // Generate key from label if key is empty (Hungarian-aware)
   useEffect(() => {
     if (!field && formData.label && !formData.key) {
-      const generatedKey = formData.label
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '_')
-        .replace(/^_+|_+$/g, '');
-      setFormData((prev) => ({ ...prev, key: generatedKey }));
+      setFormData((prev) => ({ ...prev, key: generateKey(formData.label) }));
     }
   }, [formData.label, formData.key, field]);
 
@@ -142,7 +143,9 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({
     } else if (!/^[a-z][a-z0-9_]*$/.test(formData.key)) {
       newErrors.key = 'Mező kulcs csak kisbetűkkel, számokkal és alulvonással kezdődhet';
     } else if (existingKeys.includes(formData.key)) {
-      newErrors.key = 'Ez a kulcs már létezik';
+      newErrors.key = 'Ez a kulcs már létezik egy másik mezőnél';
+    } else if (allSectionKeys.includes(formData.key)) {
+      newErrors.key = 'Ez a kulcs már létezik egy szekciónál — ütközést okozhat';
     }
 
     if (!formData.label) {
@@ -186,12 +189,9 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({
     const newOptions = [...options];
     newOptions[index] = { ...newOptions[index], ...updates };
 
-    // Auto-generate value from label if empty
+    // Auto-generate value from label if empty (Hungarian-aware)
     if (updates.label && !newOptions[index].value) {
-      newOptions[index].value = updates.label
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '_')
-        .replace(/^_+|_+$/g, '');
+      newOptions[index].value = generateKey(updates.label);
     }
 
     setOptions(newOptions);
@@ -352,6 +352,16 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({
                 autoComplete="off"
               />
             </FormLayout.Group>
+
+            {/* Warning when editing a key that's referenced in the formula */}
+            {field && formData.key !== field.key && pricingFormula && (
+              pricingFormula.includes(field.key) || pricingFormula.includes(`${field.key}_price`)
+            ) && (
+              <Banner tone="warning">
+                A régi kulcs (<strong>{field.key}</strong>) szerepel az árképletben.
+                Ha átírod, a képletet is frissítened kell, különben mentési hiba lesz!
+              </Banner>
+            )}
 
             <TextField
               label="Placeholder"

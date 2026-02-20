@@ -22,9 +22,10 @@ import type { TemplateSection, LayoutType, BuiltInSectionType } from '@/types/te
 interface SectionsListProps {
   sections: TemplateSection[];
   onChange: (sections: TemplateSection[]) => void;
+  pricingFormula?: string;
 }
 
-export const SectionsList: React.FC<SectionsListProps> = ({ sections, onChange }) => {
+export const SectionsList: React.FC<SectionsListProps> = ({ sections, onChange, pricingFormula = '' }) => {
   const [editingSection, setEditingSection] = useState<TemplateSection | null>(null);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [showEditor, setShowEditor] = useState(false);
@@ -133,6 +134,8 @@ export const SectionsList: React.FC<SectionsListProps> = ({ sections, onChange }
           <SectionEditor
             section={editingSection}
             existingKeys={sections.map((s) => s.key)}
+            allFieldKeys={sections.flatMap((s) => (s.fields || []).map((f) => f.key))}
+            pricingFormula={pricingFormula}
             sectionCount={sections.length}
             onSave={handleSave}
             onClose={() => {
@@ -236,6 +239,8 @@ export const SectionsList: React.FC<SectionsListProps> = ({ sections, onChange }
           existingKeys={sections
             .map((s) => s.key)
             .filter((_, i) => i !== editingIndex)}
+          allFieldKeys={sections.flatMap((s) => (s.fields || []).map((f) => f.key))}
+          pricingFormula={pricingFormula}
           sectionCount={sections.length}
           onSave={handleSave}
           onClose={() => {

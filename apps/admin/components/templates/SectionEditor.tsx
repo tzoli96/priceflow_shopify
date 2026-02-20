@@ -30,8 +30,9 @@ import type {
   PresetValue,
 } from '@/types/template';
 import { FieldsList } from './FieldsList';
-import { Button, Box } from '@shopify/polaris';
+import { Button, Box, Banner } from '@shopify/polaris';
 import { PlusIcon, DeleteIcon } from '@shopify/polaris-icons';
+import { generateKey } from '@/lib/utils/helpers';
 
 // Layout type options with visual representations
 const LAYOUT_TYPES: Array<{
@@ -122,6 +123,8 @@ const COLUMNS_OPTIONS = [
 interface SectionEditorProps {
   section: TemplateSection | null;
   existingKeys: string[];
+  allFieldKeys?: string[]; // All field keys for cross-namespace collision warning
+  pricingFormula?: string; // Current formula for reference
   sectionCount?: number;
   onSave: (section: Omit<TemplateSection, 'id'>) => void;
   onClose: () => void;
@@ -130,6 +133,8 @@ interface SectionEditorProps {
 export const SectionEditor: React.FC<SectionEditorProps> = ({
   section,
   existingKeys,
+  allFieldKeys = [],
+  pricingFormula = '',
   sectionCount = 0,
   onSave,
   onClose,
@@ -150,13 +155,10 @@ export const SectionEditor: React.FC<SectionEditorProps> = ({
   const [presets, setPresets] = useState<PresetValue[]>(section?.presets || []);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Generate key from title if key is empty
+  // Generate key from title if key is empty (Hungarian-aware)
   useEffect(() => {
     if (!section && formData.title && !formData.key) {
-      const generatedKey = formData.title
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '_')
-        .replace(/^_+|_+$/g, '');
+      const generatedKey = generateKey(formData.title);
       setFormData((prev) => ({ ...prev, key: generatedKey }));
     }
   }, [formData.title, formData.key, section]);
@@ -169,7 +171,9 @@ export const SectionEditor: React.FC<SectionEditorProps> = ({
     } else if (!/^[a-z][a-z0-9_]*$/.test(formData.key)) {
       newErrors.key = 'Szekció kulcs csak kisbetűkkel, számokkal és alulvonással kezdődhet';
     } else if (existingKeys.includes(formData.key)) {
-      newErrors.key = 'Ez a kulcs már létezik';
+      newErrors.key = 'Ez a kulcs már létezik egy másik szekciónál';
+    } else if (allFieldKeys.includes(formData.key)) {
+      newErrors.key = 'Ez a kulcs már létezik egy mezőnél — ütközést okozhat';
     }
 
     if (!formData.title) {
@@ -382,7 +386,12 @@ export const SectionEditor: React.FC<SectionEditorProps> = ({
 
           {/* Mezők kezelése */}
           <Text variant="headingMd" as="h3">Mezők ebben a szekcióban</Text>
-          <FieldsList fields={fields} onChange={setFields} />
+          <FieldsList
+            fields={fields}
+            onChange={setFields}
+            allSectionKeys={existingKeys}
+            pricingFormula={pricingFormula}
+          />
 
           {/* Presetek kezelése - csak SPLIT layout esetén */}
           {formData.layoutType === 'SPLIT' && (

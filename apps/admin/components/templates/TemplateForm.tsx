@@ -220,6 +220,7 @@ export function TemplateForm({
               <SectionsList
                 sections={formData.sections}
                 onChange={(sections) => handleChange('sections', sections)}
+                pricingFormula={formData.pricingFormula}
               />
             </div>
           </FormSection>
