@@ -5,7 +5,7 @@
 
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   BlockStack,
   InlineStack,
@@ -62,6 +62,69 @@ export const FormulaBuilder: React.FC<FormulaBuilderProps> = ({
 
     return false;
   });
+
+  // Real-time formula validation
+  const formulaIssues = useMemo(() => {
+    const errors: string[] = [];
+
+    if (!formula || !formula.trim()) return errors;
+
+    // Build set of all available variable keys
+    const availableKeys = new Set<string>();
+    FORMULA_SYSTEM_VARIABLES.forEach((v) => availableKeys.add(v.name));
+    fields.forEach((f) => {
+      if (f.type === 'NUMBER' || f.type === 'QUANTITY_SELECTOR') {
+        availableKeys.add(f.key);
+      }
+    });
+    priceOptionFields.forEach((f) => availableKeys.add(`${f.key}_price`));
+
+    const functionNames = FORMULA_FUNCTIONS.map((f) => f.name);
+
+    // Check for unknown functions
+    const funcRegex = /([a-z_][a-z0-9_]*)\s*\(/gi;
+    const unknownFuncs = new Set<string>();
+    for (const match of formula.matchAll(funcRegex)) {
+      const name = match[1].toLowerCase();
+      if (!functionNames.includes(name)) {
+        unknownFuncs.add(match[1]);
+      }
+    }
+    if (unknownFuncs.size > 0) {
+      errors.push(`Ismeretlen függvény: ${Array.from(unknownFuncs).map((f) => `${f}()`).join(', ')}`);
+    }
+
+    // Check for unknown variables
+    const varRegex = /\b([a-z_][a-z0-9_]*)\b/gi;
+    const unknownVars = new Set<string>();
+    for (const match of formula.matchAll(varRegex)) {
+      const name = match[1].toLowerCase();
+      if (functionNames.includes(name)) continue;
+      if (['true', 'false'].includes(name)) continue;
+      if (!availableKeys.has(name)) {
+        unknownVars.add(match[1]);
+      }
+    }
+    if (unknownVars.size > 0) {
+      errors.push(`Ismeretlen változó: ${Array.from(unknownVars).join(', ')}`);
+    }
+
+    // Parentheses balance check
+    let balance = 0;
+    for (const char of formula) {
+      if (char === '(') balance++;
+      if (char === ')') balance--;
+      if (balance < 0) {
+        errors.push('Záró zárójel nyitó nélkül');
+        break;
+      }
+    }
+    if (balance > 0) {
+      errors.push('Lezáratlan zárójel');
+    }
+
+    return errors;
+  }, [formula, fields, priceOptionFields]);
 
   const insertAtCursor = (text: string) => {
     const textarea = textFieldRef.current?.querySelector('textarea');
@@ -277,6 +340,19 @@ export const FormulaBuilder: React.FC<FormulaBuilderProps> = ({
           helpText="Használd a fenti gombokat a mezők és operátorok beszúrásához"
         />
       </div>
+
+      {/* Formula Validation */}
+      {formulaIssues.length > 0 && (
+        <Banner tone="warning">
+          <BlockStack gap="100">
+            {formulaIssues.map((issue, i) => (
+              <Text key={i} as="p" variant="bodySm">
+                {issue}
+              </Text>
+            ))}
+          </BlockStack>
+        </Banner>
+      )}
 
       {/* Example */}
       <Banner tone="info">
