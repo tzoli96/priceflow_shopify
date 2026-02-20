@@ -141,6 +141,12 @@ export function DekormunkaConfigurator({
   const calculatePrice = useCallback(async () => {
     if (!templateInfo?.hasTemplate || !templateInfo.template) return;
 
+    // Don't calculate if required fields are not filled
+    if (!isFormValid()) {
+      setPriceResult(null);
+      return;
+    }
+
     const numericValues: Record<string, any> = {};
     // Get all fields from sections - send ALL fields, not just useInFormula
     // Backend needs all option-based fields to calculate their prices
@@ -439,7 +445,9 @@ export function DekormunkaConfigurator({
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
           </svg>
           <div className="dekormunka-sticky-price-info">
-            {calculating ? (
+            {!isFormValid() ? (
+              <span className="dekormunka-sticky-net">Töltsd ki a kötelező mezőket</span>
+            ) : calculating ? (
               <div className="dekormunka-spinner-small" />
             ) : (
               <>
@@ -649,7 +657,11 @@ export function DekormunkaConfigurator({
 
             {/* Total price */}
             <div className="dekormunka-summary-total">
-              {calculating ? (
+              {!isFormValid() ? (
+                <div className="dekormunka-calculating">
+                  <span>Töltsd ki a kötelező mezőket az árkalkulációhoz</span>
+                </div>
+              ) : calculating ? (
                 <div className="dekormunka-calculating">
                   <div className="dekormunka-spinner-small" />
                   <span>Számítás...</span>
