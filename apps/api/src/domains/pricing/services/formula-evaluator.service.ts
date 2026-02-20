@@ -120,8 +120,11 @@ export class FormulaEvaluatorService {
     }
 
     try {
+      // Collapse newlines so multiline formulas don't break (mathjs treats \n as statement separator)
+      const singleLineFormula = formula.replace(/\s*\n\s*/g, ' ');
+
       // Convert ternary operators to if() function
-      const processedFormula = this.convertTernaryToIf(formula);
+      const processedFormula = this.convertTernaryToIf(singleLineFormula);
 
       // Create a safe scope with only the provided context variables
       const scope = { ...context };

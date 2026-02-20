@@ -11,12 +11,12 @@
 {% assign variant_id = product.selected_or_first_available_variant.id %}
 
 <div
-  id="priceflow-widget-{{ block.id }}"
-  class="priceflow-widget"
-  data-product-id="{{ product.id }}"
-  data-variant-id="{{ variant_id }}"
-  data-product-handle="{{ product.handle }}"
-  data-shop="{{ shop.permanent_domain }}"
+        id="priceflow-widget-{{ block.id }}"
+        class="priceflow-widget"
+        data-product-id="{{ product.id }}"
+        data-variant-id="{{ variant_id }}"
+        data-product-handle="{{ product.handle }}"
+        data-shop="{{ shop.permanent_domain }}"
 >
   {%- comment -%}
     The spacer grows to match the iframe's full content height.
@@ -25,13 +25,13 @@
   {%- endcomment -%}
   <div id="priceflow-spacer-{{ block.id }}" class="priceflow-scroll-spacer">
     <iframe
-      id="priceflow-iframe-{{ block.id }}"
-      src="{{ widget_url }}?productId={{ product.id }}&shop={{ shop.permanent_domain }}&handle={{ product.handle }}&variant={{ variant_id }}"
-      width="100%"
-      frameborder="0"
-      style="border: none; border-radius: 8px;"
-      title="PriceFlow Konfigurátor"
-      loading="lazy"
+            id="priceflow-iframe-{{ block.id }}"
+            src="{{ widget_url }}?productId={{ product.id }}&shop={{ shop.permanent_domain }}&handle={{ product.handle }}&variant={{ variant_id }}"
+            width="100%"
+            frameborder="0"
+            style="border: none; border-radius: 8px;"
+            title="PriceFlow Konfigurátor"
+            loading="lazy"
     ></iframe>
   </div>
 </div>
@@ -116,11 +116,9 @@
 
 <style>
   .priceflow-widget {
-    width: 100%;
-    max-width: 100%;
+    width: 100vw;
     margin-top: 20px;
     margin-bottom: 20px;
-    overflow-x: hidden;
   }
 
   .priceflow-scroll-spacer {
