@@ -36,6 +36,22 @@
   </div>
 </div>
 
+{%- comment -%} Mobile sticky bar — lives in parent DOM, outside iframe {%- endcomment -%}
+<div id="priceflow-sticky-{{ block.id }}" class="priceflow-sticky" style="display:none;">
+  <div class="priceflow-sticky__price">
+    <span id="priceflow-sticky-net-{{ block.id }}" class="priceflow-sticky__net">-</span>
+    <span id="priceflow-sticky-gross-{{ block.id }}" class="priceflow-sticky__gross"></span>
+  </div>
+  <button
+          id="priceflow-sticky-btn-{{ block.id }}"
+          class="priceflow-sticky__btn"
+          type="button"
+          disabled
+  >
+    Kosárba teszem
+  </button>
+</div>
+
 <script>
   (function() {
     var blockId = '{{ block.id }}';
@@ -46,6 +62,25 @@
     var iframeScrollHeight = 0;
     var ticking = false;
 
+    // ---- Mobile sticky bar elements ----
+    var stickyBar  = document.getElementById('priceflow-sticky-' + blockId);
+    var stickyNet  = document.getElementById('priceflow-sticky-net-' + blockId);
+    var stickyGross = document.getElementById('priceflow-sticky-gross-' + blockId);
+    var stickyBtn  = document.getElementById('priceflow-sticky-btn-' + blockId);
+
+    function formatHuf(n) {
+      return new Intl.NumberFormat('hu-HU', { style: 'currency', currency: 'HUF', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(n);
+    }
+
+    // Sticky button → tell iframe to add to cart
+    if (stickyBtn) {
+      stickyBtn.addEventListener('click', function() {
+        if (iframe.contentWindow) {
+          iframe.contentWindow.postMessage({ type: 'PRICEFLOW_STICKY_CLICK' }, '*');
+        }
+      });
+    }
+
     // ---- Sync: calculate iframe scrollTop from parent scroll position ----
     function syncScroll() {
       if (!iframeScrollHeight) return;
@@ -54,8 +89,6 @@
       var iframeH    = iframe.offsetHeight;
       var maxScroll  = Math.max(0, iframeScrollHeight - iframeH);
 
-      // spacerRect.top == 0 → iframe scroll = 0
-      // spacerRect.top == -maxScroll → iframe scroll = maxScroll
       var scrollTop = Math.max(0, Math.min(-spacerRect.top, maxScroll));
 
       iframe.contentWindow.postMessage({
@@ -72,6 +105,18 @@
       var data = event.data;
       if (!data || !data.type) return;
 
+      // No template for this product → hide the entire widget
+      if (data.type === 'PRICEFLOW_EMPTY') {
+        var widget = document.getElementById('priceflow-widget-' + blockId);
+        if (widget) {
+          widget.style.display = 'none';
+        }
+        if (stickyBar) {
+          stickyBar.style.display = 'none';
+        }
+        return;
+      }
+
       // Iframe reports its content height → size the spacer
       if (data.type === 'PRICEFLOW_RESIZE' && data.scrollHeight) {
         iframeScrollHeight = data.scrollHeight;
@@ -87,6 +132,38 @@
       if (data.type === 'PRICEFLOW_WHEEL') {
         window.scrollBy({ top: data.deltaY, behavior: 'instant' });
         syncScroll();
+        return;
+      }
+
+      // Sticky bar state update from iframe
+      if (data.type === 'PRICEFLOW_STICKY_UPDATE' && stickyBar) {
+        var p = data.payload;
+        if (!p || !p.visible) {
+          stickyBar.style.display = 'none';
+          return;
+        }
+
+        stickyBar.style.display = '';
+
+        if (!p.formValid) {
+          stickyNet.textContent = 'Töltsd ki a kötelező mezőket';
+          stickyGross.textContent = '';
+          stickyBtn.disabled = true;
+        } else if (p.calculating) {
+          stickyNet.textContent = 'Számítás...';
+          stickyGross.textContent = '';
+          stickyBtn.disabled = true;
+        } else if (p.price) {
+          stickyNet.textContent = formatHuf(p.price) + ' + Áfa';
+          stickyGross.textContent = '(bruttó ' + formatHuf(p.grossPrice) + ')';
+          stickyBtn.disabled = false;
+        } else {
+          stickyNet.textContent = '-';
+          stickyGross.textContent = '';
+          stickyBtn.disabled = true;
+        }
+
+        stickyBtn.disabled = !p.canAddToCart;
         return;
       }
 
@@ -134,6 +211,75 @@
     border: none;
     position: sticky;
     top: 0;
+  }
+
+  /* ===== Parent-level mobile sticky bar ===== */
+  .priceflow-sticky {
+    display: none; /* hidden on desktop by default */
+  }
+
+  @media (max-width: 1024px) {
+    .priceflow-sticky {
+      display: flex;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 9999;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 16px;
+      padding-bottom: calc(12px + env(safe-area-inset-bottom));
+      background: #fff;
+      border-top: 1px solid #e1e3e5;
+      box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.10);
+    }
+
+    .priceflow-sticky__price {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .priceflow-sticky__net {
+      font-size: 17px;
+      font-weight: 700;
+      color: #1a1a2e;
+      line-height: 1.2;
+      white-space: nowrap;
+    }
+
+    .priceflow-sticky__gross {
+      font-size: 12px;
+      color: #6b7280;
+      line-height: 1.3;
+    }
+
+    .priceflow-sticky__btn {
+      flex-shrink: 0;
+      padding: 12px 18px;
+      background: #1a1a2e;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.2s ease;
+    }
+
+    .priceflow-sticky__btn:active:not(:disabled) {
+      background: #0f0f1e;
+    }
+
+    .priceflow-sticky__btn:disabled {
+      background: #e1e3e5;
+      color: #6b7280;
+      cursor: not-allowed;
+    }
   }
 </style>
 

@@ -235,6 +235,40 @@ export function DekormunkaConfigurator({
     };
   }, []);
 
+  // Send sticky bar state to parent (Shopify page) so it can render a native sticky bar
+  const isInIframe = typeof window !== 'undefined' && window.parent !== window;
+  useEffect(() => {
+    if (!isInIframe) return;
+
+    const valid = isFormValid();
+    const price = priceResult?.calculatedPrice ?? null;
+
+    window.parent.postMessage({
+      type: 'PRICEFLOW_STICKY_UPDATE',
+      payload: {
+        visible: Boolean(templateInfo?.hasTemplate) && !addedToCart,
+        formValid: valid,
+        calculating,
+        price,
+        grossPrice: price ? Math.round(price * 1.27) : null,
+        canAddToCart: valid && !calculating && Boolean(priceResult),
+      },
+    }, '*');
+  }, [priceResult, calculating, fieldValues, templateInfo, addedToCart]);
+
+  // Listen for parent sticky bar "Add to cart" click
+  useEffect(() => {
+    if (!isInIframe) return;
+
+    const handler = (event: MessageEvent) => {
+      if (event.data?.type === 'PRICEFLOW_STICKY_CLICK') {
+        handleAddToCart();
+      }
+    };
+    window.addEventListener('message', handler);
+    return () => window.removeEventListener('message', handler);
+  }, [priceResult, templateInfo, fieldValues, isExpress, notes, uploadedFile]);
+
   // Handle field change
   const handleFieldChange = (key: string, value: any) => {
     setFieldValues((prev) => ({ ...prev, [key]: value }));
@@ -418,8 +452,11 @@ export function DekormunkaConfigurator({
     );
   }
 
-  // No template found
+  // No template found — notify parent to collapse the widget
   if (!templateInfo?.hasTemplate || !templateInfo.template) {
+    if (typeof window !== 'undefined' && window.parent !== window) {
+      window.parent.postMessage({ type: 'PRICEFLOW_EMPTY' }, '*');
+    }
     return null;
   }
 
@@ -450,40 +487,7 @@ export function DekormunkaConfigurator({
 
   return (
     <div className={`dekormunka-configurator ${className}`}>
-      {/* Mobile sticky bottom bar */}
-      <div className={`dekormunka-sticky-bar ${hideMobileSticky ? 'hidden' : ''}`}>
-        <div className="dekormunka-sticky-price">
-          {/* <svg className="dekormunka-sticky-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-          </svg> */}
-          <div className="dekormunka-sticky-price-info">
-            {!isFormValid() ? (
-              <span className="dekormunka-sticky-net">Töltsd ki a kötelező mezőket</span>
-            ) : calculating ? (
-              <div className="dekormunka-spinner-small" />
-            ) : (
-              <>
-                <span className="dekormunka-sticky-net">
-                  {priceResult ? `${formatPrice(priceResult.calculatedPrice)} + Áfa` : '-'}
-                </span>
-                {priceResult && (
-                  <span className="dekormunka-sticky-gross">
-                    (bruttó {formatPrice(Math.round(priceResult.calculatedPrice * 1.27))})
-                  </span>
-                )}
-              </>
-            )}
-          </div>
-        </div>
-        <button
-          type="button"
-          className="dekormunka-sticky-btn"
-          onClick={handleAddToCart}
-          disabled={!isFormValid() || calculating || !priceResult}
-        >
-          Kosárba teszem
-        </button>
-      </div>
+      {/* Mobile sticky bar is rendered by the parent Shopify page (outside iframe) via PRICEFLOW_STICKY_UPDATE */}
 
       <div className="dekormunka-layout">
         {/* Left side - Form sections */}
