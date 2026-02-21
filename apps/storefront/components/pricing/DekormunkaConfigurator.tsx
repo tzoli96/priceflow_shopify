@@ -81,6 +81,7 @@ export function DekormunkaConfigurator({
   // Mobile sticky visibility - hide when full summary is visible
   const [hideMobileSticky, setHideMobileSticky] = useState(false);
   const fullSummaryRef = useRef<HTMLDivElement>(null);
+  const thankyouRef = useRef<HTMLDivElement>(null);
 
   // Load template on mount
   useEffect(() => {
@@ -346,6 +347,9 @@ export function DekormunkaConfigurator({
     });
 
     setAddedToCart(true);
+    setTimeout(() => {
+      thankyouRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 50);
   };
 
   // Check if all required fields are filled
@@ -423,7 +427,7 @@ export function DekormunkaConfigurator({
   if (addedToCart) {
     return (
       <div className={`dekormunka-configurator ${className}`}>
-        <div className="dekormunka-thankyou">
+        <div className="dekormunka-thankyou" ref={thankyouRef}>
           <svg className="dekormunka-thankyou-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
@@ -449,9 +453,9 @@ export function DekormunkaConfigurator({
       {/* Mobile sticky bottom bar */}
       <div className={`dekormunka-sticky-bar ${hideMobileSticky ? 'hidden' : ''}`}>
         <div className="dekormunka-sticky-price">
-          <svg className="dekormunka-sticky-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          {/* <svg className="dekormunka-sticky-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-          </svg>
+          </svg> */}
           <div className="dekormunka-sticky-price-info">
             {!isFormValid() ? (
               <span className="dekormunka-sticky-net">Töltsd ki a kötelező mezőket</span>
